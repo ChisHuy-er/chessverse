@@ -1,0 +1,1384 @@
+/* =====================================================
+   CHESSVERSE - ACADEMY THEME
+   Trang chủ dùng các class bắt đầu bằng "ac-".
+   Có hai bộ màu: tối (mặc định) và sáng (nút mặt trăng/mặt trời).
+===================================================== */
+
+.ac-shell {
+  --ac-text: #ece9f5;
+  --ac-heading: #ffffff;
+  --ac-muted: #a9aecb;
+  --ac-gold: #e0b65a;
+  --ac-gold-soft: #f1d58f;
+  --ac-line: rgba(224, 182, 90, .3);
+  --ac-panel: rgba(13, 20, 56, .86);
+  --ac-row: rgba(255, 255, 255, .05);
+  --ac-sidebar: rgba(8, 12, 38, .94);
+  --ac-divider: rgba(255, 255, 255, .1);
+  --ac-ring-bg: #0d1438;
+  --ac-page-overlay: linear-gradient(180deg, rgba(6, 10, 30, .72), rgba(6, 10, 30, .9));
+  --ac-nav-text: #dedbea;
+
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  color: var(--ac-text);
+  background: #070b1f;
+}
+
+html[data-theme="light"] .ac-shell {
+  --ac-text: #2b2d36;
+  --ac-heading: #1b1d26;
+  --ac-muted: #6b6e7c;
+  --ac-gold: #a8791f;
+  --ac-gold-soft: #8a6215;
+  --ac-line: #e0d3b4;
+  --ac-panel: rgba(255, 255, 255, .93);
+  --ac-row: #f6f2e8;
+  --ac-sidebar: rgba(255, 253, 248, .96);
+  --ac-divider: #ebe4d3;
+  --ac-ring-bg: #ffffff;
+  --ac-page-overlay: linear-gradient(180deg, rgba(247, 244, 237, .9), rgba(244, 241, 234, .96));
+  --ac-nav-text: #3c3d47;
+
+  background: #f4f1ea;
+}
+
+/* Nền cảnh lâu đài phía sau toàn trang */
+.ac-shell::before {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  content: "";
+  background:
+    var(--ac-page-overlay),
+    url(/images/academy/bg-scene.jpg) center / cover no-repeat;
+  pointer-events: none;
+}
+
+.ac-sidebar,
+.ac-main {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Sidebar ---------- */
+
+.ac-sidebar {
+  width: 250px;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--ac-line);
+  background: var(--ac-sidebar);
+  backdrop-filter: blur(6px);
+}
+
+.ac-logo {
+  padding: 22px 12px 8px;
+  text-align: center;
+}
+
+.ac-logo-emblem {
+  width: 104px;
+  height: 94px;
+  margin: 0 auto;
+  background: url(/images/academy/logo.png) center / contain no-repeat;
+}
+
+.ac-logo-name {
+  margin-top: 8px;
+  color: var(--ac-gold-soft);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.ac-logo-caption {
+  margin-top: 2px;
+  color: var(--ac-muted);
+  font-size: 13px;
+}
+
+.ac-nav {
+  padding: 20px 12px 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.ac-nav-item {
+  min-height: 46px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ac-nav-text);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 15.5px;
+  font-weight: 600;
+  text-align: left;
+  transition: background .15s, border-color .15s;
+}
+
+.ac-nav-item:hover {
+  background: var(--ac-row);
+}
+
+.ac-nav-item.active {
+  border-color: var(--ac-line);
+  background: rgba(224, 182, 90, .16);
+  color: var(--ac-gold-soft);
+  box-shadow: inset 3px 0 0 var(--ac-gold);
+}
+
+.ac-nav-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.ac-side-bottom {
+  margin-top: auto;
+  text-align: center;
+}
+
+.ac-side-art {
+  height: 230px;
+  background: url(/images/academy/side-art.jpg) 20% 25% / cover no-repeat;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%);
+  mask-image: linear-gradient(180deg, transparent, #000 45%);
+}
+
+.ac-side-bottom p {
+  margin: -40px 12px 0;
+  padding-bottom: 16px;
+  position: relative;
+  color: #e9e3d0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 13.5px;
+  font-style: italic;
+  line-height: 1.5;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, .8);
+}
+
+html[data-theme="light"] .ac-side-bottom p {
+  color: #fff;
+}
+
+/* ---------- Khu chính ---------- */
+
+.ac-main {
+  min-width: 0;
+  flex: 1;
+  padding: 0 22px 24px;
+}
+
+.ac-topbar {
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.ac-greeting {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.ac-crown {
+  width: 46px;
+  height: 38px;
+  flex: 0 0 46px;
+  background: url(/images/academy/crown.png) center / contain no-repeat;
+}
+
+.ac-greeting-title {
+  color: var(--ac-heading);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.ac-greeting-title span {
+  color: var(--ac-gold);
+}
+
+.ac-greeting-sub {
+  margin-top: 2px;
+  color: var(--ac-muted);
+  font-size: 14px;
+}
+
+.ac-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ac-bell,
+.ac-top-actions .ac-theme {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ac-line);
+  border-radius: 50%;
+  background: var(--ac-panel);
+}
+
+.ac-bell-icon {
+  width: 22px;
+  height: 24px;
+  background: url(/images/academy/bell.png) center / contain no-repeat;
+}
+
+.ac-top-actions .ac-theme:hover {
+  transform: none;
+  background: var(--ac-row);
+}
+
+.ac-profile {
+  padding: 4px 14px 4px 5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--ac-line);
+  border-radius: 30px;
+  background: var(--ac-panel);
+  color: var(--ac-text);
+  text-align: left;
+}
+
+.ac-avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ac-gold);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #4b3aa0, #1a1f5a);
+  color: #fff;
+  font-weight: 800;
+}
+
+.ac-profile-info {
+  display: grid;
+  gap: 2px;
+}
+
+.ac-profile-info strong {
+  font-size: 14px;
+}
+
+.ac-profile-info small {
+  color: var(--ac-gold-soft);
+  font-size: 12px;
+}
+
+.ac-chevron {
+  color: var(--ac-muted);
+}
+
+.ac-dropdown-link {
+  border-color: rgba(224, 182, 90, .35) !important;
+  color: var(--ac-gold-soft) !important;
+  background: rgba(224, 182, 90, .08) !important;
+}
+
+.ac-notice {
+  margin-bottom: 14px;
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--ac-line);
+  border-radius: 10px;
+  background: rgba(224, 182, 90, .12);
+  color: var(--ac-gold-soft);
+  font-size: 13px;
+}
+
+.ac-notice p {
+  flex: 1;
+  margin: 0;
+}
+
+.ac-notice button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+}
+
+.ac-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 370px;
+  gap: 16px;
+}
+
+.ac-col-main,
+.ac-col-side {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+/* ---------- Thẻ chung ---------- */
+
+.ac-panel {
+  padding: 16px 18px;
+  border: 1px solid var(--ac-line);
+  border-radius: 12px;
+  background: var(--ac-panel);
+  backdrop-filter: blur(6px);
+}
+
+.ac-panel-head {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ac-panel-head h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ac-heading);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.ac-head-icon {
+  color: var(--ac-gold);
+  font-size: 18px;
+}
+
+.ac-link {
+  border: 0;
+  background: transparent;
+  color: var(--ac-gold-soft);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ac-link:hover {
+  text-decoration: underline;
+}
+
+.ac-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--ac-line);
+  border-radius: 6px;
+  color: var(--ac-gold-soft);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ac-label {
+  color: var(--ac-muted);
+  font-size: 13px;
+}
+
+.ac-label.center {
+  text-align: center;
+}
+
+.ac-gold-button {
+  min-height: 42px;
+  padding: 0 24px;
+  border: 1px solid rgba(255, 226, 154, .6);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #e9c46c, #c59a3a);
+  color: #2a1c05;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  transition: filter .15s;
+}
+
+.ac-gold-button:hover {
+  filter: brightness(1.08);
+}
+
+.ac-gold-button.small {
+  min-height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+/* ---------- Banner ---------- */
+
+.ac-hero {
+  position: relative;
+  min-height: 250px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--ac-line);
+  border-radius: 12px;
+  background: #0b1030 url(/images/academy/bg-scene.jpg) 80% 30% / cover no-repeat;
+}
+
+.ac-hero-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(6, 10, 34, .88) 0%, rgba(6, 10, 34, .55) 42%, transparent 72%);
+}
+
+.ac-hero-center {
+  position: relative;
+  z-index: 2;
+  max-width: 500px;
+  padding: 24px 32px;
+  text-align: left;
+}
+
+.ac-hero-center h2 {
+  margin: 0;
+  color: #f1d58f;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(34px, 4.2vw, 52px);
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1.05;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .6);
+}
+
+.ac-hero-sub {
+  margin: 4px 0 10px;
+  color: #fff;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(18px, 2.2vw, 24px);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .6);
+}
+
+.ac-hero-center p {
+  max-width: 440px;
+  margin: 0 0 16px;
+  color: #e6e3f3;
+  font-size: 14px;
+  line-height: 1.6;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .7);
+}
+
+/* ---------- Khóa học ---------- */
+
+.ac-courses {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ac-course {
+  padding: 8px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--ac-line);
+  border-radius: 10px;
+  background: var(--ac-row);
+  text-align: center;
+}
+
+.ac-course-art {
+  width: 100%;
+  height: 112px;
+  border-radius: 7px;
+  background-position: center;
+  background-size: cover;
+}
+
+.ac-course-name {
+  margin-top: 10px;
+  color: var(--ac-heading);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ac-course-en {
+  color: var(--ac-muted);
+  font-size: 13px;
+}
+
+.ac-course-soon {
+  margin: 6px 0 10px;
+  color: var(--ac-gold);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ---------- Thống kê + bảng xếp hạng ---------- */
+
+.ac-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.ac-stats-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.ac-elo-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ac-badge {
+  width: 84px;
+  height: 76px;
+  background: url(/images/academy/badge.png) center / contain no-repeat;
+}
+
+.ac-elo-value {
+  margin: 3px 0;
+  color: var(--ac-heading);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.ac-elo-value span {
+  margin-left: 8px;
+  font-size: 14px;
+}
+
+.ac-elo-value .up {
+  color: #2fc79c;
+}
+
+.ac-elo-value .down {
+  color: #ef6a6a;
+}
+
+.ac-chart {
+  min-width: 0;
+  height: 116px;
+  padding-left: 14px;
+  border-left: 1px solid var(--ac-divider);
+}
+
+.ac-chart svg {
+  width: 100%;
+  height: 100%;
+}
+
+.ac-chart-empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--ac-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.ac-board-row {
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: 26px 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--ac-divider);
+}
+
+.ac-board-row:last-child {
+  border-bottom: 0;
+}
+
+.ac-board-row strong {
+  overflow: hidden;
+  color: var(--ac-heading);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ac-rank {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ac-gold);
+  border-radius: 6px;
+  color: var(--ac-gold);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ac-rank.rank-2 {
+  border-color: #9aa1ad;
+  color: #9aa1ad;
+}
+
+.ac-rank.rank-3 {
+  border-color: #b87c4d;
+  color: #b87c4d;
+}
+
+.ac-board-avatar {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ac-line);
+  border-radius: 50%;
+  background: var(--ac-row);
+  color: var(--ac-gold);
+  font-weight: 800;
+}
+
+.ac-board-elo {
+  color: var(--ac-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ---------- Cột phải ---------- */
+
+.ac-overview {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.ac-ring-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.win-ring {
+  --p: 0;
+  width: 78px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, var(--ac-ring-bg, #0e1538) 80%, transparent 82% 100%),
+    conic-gradient(#2fc79c calc(var(--p) * 1%), rgba(128, 128, 160, .25) 0);
+}
+
+.win-ring.big {
+  width: 124px;
+  height: 124px;
+}
+
+.win-ring span {
+  color: var(--ac-heading, #fff);
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.win-ring.big span {
+  font-size: 28px;
+}
+
+.win-ring small {
+  color: var(--ac-gold, #e0b65a);
+  font-size: 13px;
+}
+
+.ac-overview-stats {
+  display: grid;
+  gap: 12px;
+}
+
+.ac-overview-stats > div {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ac-divider);
+}
+
+.ac-overview-stats > div:last-child {
+  border-bottom: 0;
+}
+
+.ac-big-number {
+  margin-top: 3px;
+  color: var(--ac-heading);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.ac-big-number.small {
+  font-size: 19px;
+}
+
+.ac-missions {
+  display: grid;
+  gap: 6px;
+}
+
+.ac-mission {
+  min-height: 44px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 8px;
+  background: var(--ac-row);
+  color: var(--ac-text);
+  font-size: 14px;
+}
+
+.ac-check {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.ac-reward {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ac-chest {
+  width: 104px;
+  height: 78px;
+  background: url(/images/academy/chest.png) center / contain no-repeat;
+}
+
+/* ---------- Màn hình nhỏ ---------- */
+
+@media (max-width: 1250px) {
+  .ac-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ac-col-side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .ac-bottom,
+  .ac-col-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ac-courses {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .ac-sidebar {
+    width: 64px;
+    min-width: 64px;
+  }
+
+  .ac-logo-name,
+  .ac-logo-caption,
+  .ac-nav-text,
+  .ac-side-bottom p {
+    display: none;
+  }
+
+  .ac-logo-emblem {
+    width: 44px;
+    height: 40px;
+  }
+
+  .ac-nav {
+    padding: 14px 6px;
+  }
+
+  .ac-nav-item {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .ac-main {
+    padding: 0 12px 20px;
+  }
+
+  .ac-greeting-sub,
+  .ac-profile-info,
+  .ac-chevron,
+  .ac-crown {
+    display: none;
+  }
+
+  .ac-greeting-title {
+    font-size: 19px;
+  }
+
+  .ac-stats-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ac-chart {
+    padding: 14px 0 0;
+    border-top: 1px solid var(--ac-divider);
+    border-left: 0;
+  }
+
+  .ac-hero-center {
+    padding: 22px 18px;
+  }
+}
+
+/* =====================================================
+   BỐ CỤC GỌN (v6): vừa một màn hình, ảnh nền đè lên banner
+===================================================== */
+
+.ac-shell::before {
+  display: none;
+}
+
+/* Thanh bên dùng ảnh khung vàng, luôn tối ở cả hai chế độ */
+.ac-sidebar {
+  --ac-gold: #e0b65a;
+  --ac-gold-soft: #f1d58f;
+  --ac-line: rgba(224, 182, 90, .3);
+  --ac-row: rgba(255, 255, 255, .07);
+  --ac-muted: #b9bdd8;
+  --ac-nav-text: #dedbea;
+
+  width: 232px;
+  min-width: 232px;
+  background: #0a0f33 url(/images/academy/sidebar-bg.jpg) center top / cover no-repeat;
+  backdrop-filter: none;
+  border-right: 0;
+}
+
+.ac-logo {
+  padding: clamp(26px, 5vh, 46px) 12px 4px;
+}
+
+.ac-logo-emblem {
+  width: clamp(60px, 10vh, 86px);
+  height: clamp(54px, 9vh, 78px);
+}
+
+.ac-logo-name {
+  margin-top: 4px;
+  font-size: 21px;
+}
+
+.ac-logo-caption {
+  font-size: 12px;
+}
+
+.ac-nav {
+  padding: clamp(10px, 2.4vh, 22px) 22px 8px;
+  gap: 2px;
+}
+
+.ac-nav-item {
+  min-height: clamp(36px, 5.6vh, 44px);
+  padding: 0 12px;
+  gap: 12px;
+  font-size: 14.5px;
+}
+
+.ac-nav-icon {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+}
+
+.ac-side-bottom p {
+  display: none;
+}
+
+html[data-theme="light"] .ac-side-bottom p {
+  color: #e9e3d0;
+}
+
+/* Khu chính: ảnh lâu đài phía sau, banner đè lên một phần */
+.ac-main {
+  isolation: isolate;
+  padding: 0 18px 12px;
+}
+
+.ac-main::before {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: min(52vh, 460px);
+  content: "";
+  background: url(/images/academy/scene-top.jpg) center 28% / cover no-repeat;
+  -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
+  pointer-events: none;
+}
+
+html[data-theme="light"] .ac-main::before {
+  opacity: .5;
+}
+
+.ac-topbar {
+  min-height: clamp(54px, 8.5vh, 76px);
+}
+
+.ac-crown {
+  width: 38px;
+  height: 31px;
+  flex-basis: 38px;
+}
+
+.ac-greeting-title {
+  font-size: 21px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .6);
+}
+
+.ac-greeting-sub {
+  font-size: 13px;
+}
+
+html:not([data-theme="light"]) .ac-greeting-sub {
+  color: #d3d6ea;
+}
+
+.ac-bell,
+.ac-top-actions .ac-theme {
+  width: 38px;
+  height: 38px;
+}
+
+.ac-avatar {
+  width: 34px;
+  height: 34px;
+}
+
+.ac-grid {
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 12px;
+}
+
+.ac-col-main,
+.ac-col-side {
+  gap: 12px;
+}
+
+.ac-panel {
+  padding: 10px 14px 12px;
+}
+
+.ac-panel-head {
+  margin-bottom: 8px;
+}
+
+.ac-panel-head h3 {
+  font-size: 16px;
+}
+
+/* Banner dùng ảnh có quân vua, chữ ở giữa */
+.ac-hero {
+  min-height: clamp(150px, 27vh, 250px);
+  justify-content: center;
+  background: #0b1030 url(/images/academy/hero.jpg) center 62% / cover no-repeat;
+  border-color: rgba(224, 182, 90, .55);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+}
+
+.ac-hero-shade {
+  background: radial-gradient(ellipse at center, rgba(6, 10, 34, .6), transparent 62%);
+}
+
+.ac-hero-center {
+  max-width: 520px;
+  padding: 12px 20px;
+  text-align: center;
+}
+
+.ac-hero-center h2 {
+  font-size: clamp(28px, 3.4vw, 44px);
+}
+
+.ac-hero-sub {
+  margin: 2px 0 6px;
+  font-size: clamp(16px, 1.8vw, 21px);
+}
+
+.ac-hero-center p {
+  margin: 0 auto 10px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .95), 0 0 14px rgba(0, 0, 0, .8);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ac-gold-button {
+  min-height: 36px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+.ac-courses {
+  gap: 10px;
+}
+
+.ac-course {
+  padding: 6px 6px 8px;
+}
+
+.ac-course-art {
+  height: clamp(52px, 11.5vh, 100px);
+}
+
+.ac-course-name {
+  margin-top: 6px;
+  font-size: 14.5px;
+}
+
+.ac-course-en {
+  font-size: 12px;
+}
+
+.ac-course-soon {
+  margin: 2px 0 6px;
+  font-size: 10px;
+}
+
+.ac-gold-button.small {
+  min-height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.ac-bottom {
+  gap: 12px;
+}
+
+.ac-badge {
+  width: 64px;
+  height: 58px;
+}
+
+.ac-elo-value {
+  font-size: 24px;
+}
+
+.ac-chart {
+  height: clamp(70px, 13vh, 110px);
+}
+
+.ac-board-row {
+  min-height: 38px;
+}
+
+.win-ring.big {
+  width: clamp(84px, 14vh, 112px);
+  height: clamp(84px, 14vh, 112px);
+}
+
+.win-ring.big span {
+  font-size: 24px;
+}
+
+.ac-big-number {
+  font-size: 22px;
+}
+
+.ac-overview-stats {
+  gap: 8px;
+}
+
+.ac-overview-stats > div {
+  padding-bottom: 6px;
+}
+
+.ac-mission {
+  min-height: 34px;
+  font-size: 13px;
+}
+
+.ac-check {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+}
+
+.ac-reward {
+  margin-top: 8px;
+}
+
+.ac-chest {
+  width: 84px;
+  height: 58px;
+}
+
+@media (max-width: 760px) {
+  .ac-sidebar {
+    width: 64px;
+    min-width: 64px;
+  }
+
+  .ac-nav {
+    padding: 14px 6px;
+  }
+}
+
+/* =====================================================
+   MÀU DARK MODE CHO CÁC TRANG VÀ HỘP THOẠI CÒN LẠI
+===================================================== */
+
+html:not([data-theme="light"]) {
+  --bg: #070b1f;
+  --panel: #0e1538;
+  --panel-light: #141d4a;
+  --border: rgba(232, 190, 90, .28);
+  --gold: #e8be5a;
+  --gold-light: #ffd983;
+}
+
+html:not([data-theme="light"]) body,
+html:not([data-theme="light"]) .app-shell {
+  background:
+    radial-gradient(ellipse at 80% -10%, rgba(120, 80, 220, .22), transparent 45%),
+    radial-gradient(ellipse at 0% 100%, rgba(40, 90, 200, .18), transparent 40%),
+    #070b1f;
+}
+
+/* Hộp thoại, menu, thông báo */
+html:not([data-theme="light"]) .modal-card,
+html:not([data-theme="light"]) .auth-card,
+html:not([data-theme="light"]) .welcome-toast {
+  border-color: rgba(232, 190, 90, .45);
+  background: linear-gradient(160deg, #161f50, #0b1130);
+}
+
+html:not([data-theme="light"]) .profile-dropdown {
+  border-color: rgba(232, 190, 90, .4);
+  background: #0e1538;
+}
+
+html:not([data-theme="light"]) .mode-list button,
+html:not([data-theme="light"]) .modal-feature {
+  border-color: rgba(232, 190, 90, .25);
+  background: rgba(255, 255, 255, .04);
+}
+
+html:not([data-theme="light"]) .mode-list button:hover {
+  border-color: rgba(232, 190, 90, .7);
+  background: rgba(232, 190, 90, .1);
+}
+
+/* Trang chơi cờ thống nhất màu nền */
+html:not([data-theme="light"]) .play-page {
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(120, 80, 220, .18), transparent 50%),
+    #070b1f;
+}
+
+html:not([data-theme="light"]) .play-header {
+  border-bottom-color: rgba(232, 190, 90, .25);
+  background: #0a0f2a;
+}
+
+html:not([data-theme="light"]) .game-panel,
+html:not([data-theme="light"]) .opponent-bar,
+html:not([data-theme="light"]) .player-bar,
+html:not([data-theme="light"]) .board-status,
+html:not([data-theme="light"]) .chess-board-frame {
+  border-color: rgba(232, 190, 90, .25);
+  background: #0e1538;
+}
+
+/* =====================================================
+   v8: nền chính phủ toàn trang, banner khớp cùng một cảnh
+===================================================== */
+
+.ac-shell {
+  --hh: clamp(150px, 27vh, 250px);
+  --bl: 230px;
+  --bw: calc(100vw - 600px);
+  --bt: clamp(54px, 8.5vh, 76px);
+  --sbw: 212px;
+  --sw: max(calc(var(--hh) * 4.5), var(--bw));
+  --sx: calc(var(--bl) - 0.03 * var(--sw));
+  --sy: calc(var(--bt) - 0.185 * var(--sw));
+  --ov0: rgba(5, 8, 28, 0);
+  --ov1: rgba(5, 8, 28, .18);
+  --ov2: rgba(5, 8, 28, .7);
+}
+
+html[data-theme="light"] .ac-shell {
+  --ov0: rgba(244, 240, 230, 0);
+  --ov1: rgba(244, 240, 230, .1);
+  --ov2: rgba(244, 240, 230, .5);
+}
+
+@media (max-width: 1250px) {
+  .ac-shell { --bw: calc(100vw - 248px); }
+}
+
+@media (max-width: 760px) {
+  .ac-shell { --bl: 82px; --sbw: 64px; --bw: calc(100vw - 100px); }
+}
+
+/* Ảnh nền (đã nối dài sang phải và xuống dưới) phủ toàn khu chính */
+.ac-main::before {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  background:
+    linear-gradient(180deg, var(--ov0) 0, var(--ov1) 280px, var(--ov2) 100%),
+    url(/images/academy/scene-top.jpg) var(--sx) var(--sy) / calc(var(--sw) * 1.5) auto no-repeat fixed,
+    #070b2a;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+html[data-theme="light"] .ac-main::before {
+  opacity: .38;
+}
+
+html[data-theme="light"] .ac-greeting-sub {
+  color: #4a4d5c;
+}
+
+/* Khung nhìn banner: cùng ảnh, có quân vua */
+.ac-hero {
+  background: #0b1030 url(/images/academy/hero.jpg) var(--sx) var(--sy) / var(--sw) auto no-repeat fixed;
+  justify-content: flex-start;
+}
+
+.ac-hero-shade {
+  background: radial-gradient(ellipse 30% 75% at 36% 50%, rgba(6, 10, 34, .72), transparent 100%);
+}
+
+.ac-hero-center {
+  width: calc(var(--sw) * 0.31);
+  max-width: none;
+  margin-left: calc(var(--sw) * 0.2);
+  padding: 8px 6px;
+}
+
+.ac-hero-center h2 {
+  font-size: clamp(26px, calc(var(--sw) * 0.04), 42px);
+}
+
+.ac-hero-sub {
+  font-size: clamp(15px, calc(var(--sw) * 0.02), 21px);
+}
+
+.ac-hero-center p {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ac-hero-dots {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  display: flex;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+.ac-hero-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .45);
+}
+
+.ac-hero-dots i.on {
+  background: #f1d58f;
+}
+
+/* Panel trong suốt hơn để thấy nền phía sau (chế độ tối) */
+html:not([data-theme="light"]) .ac-shell {
+  --ac-panel: rgba(9, 15, 48, .66);
+}
+
+html:not([data-theme="light"]) .ac-panel {
+  backdrop-filter: blur(7px);
+}
+
+/* Ảnh khóa học: hiện đủ, không bị cắt */
+.ac-course-art {
+  height: clamp(74px, 17vh, 128px);
+  background-position: center 35%;
+}
+
+/* Thanh bên hẹp lại */
+.ac-sidebar {
+  width: 212px;
+  min-width: 212px;
+}
+
+.ac-nav {
+  padding-right: 18px;
+  padding-left: 18px;
+}
+
+/* Thanh bên: dùng đúng ảnh khung dọc, co vừa chiều cao */
+.ac-sidebar {
+  background: #0a0f33 url(/images/academy/sidebar-bg.jpg) center / 100% 100% no-repeat;
+}
+
+.ac-logo {
+  padding: clamp(22px, 4.2vh, 36px) 14px 0;
+}
+
+.ac-logo-emblem {
+  width: clamp(112px, 22vh, 160px);
+  height: clamp(102px, 20vh, 146px);
+}
+
+.ac-logo-name {
+  margin-top: 2px;
+  font-size: 24px;
+}
+
+.ac-logo-caption {
+  font-size: 13px;
+}
+
+/* Câu trích dẫn nằm sát đáy, có nền tối để đọc được trên các quân cờ */
+.ac-side-bottom {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  left: 12px;
+}
+
+.ac-side-bottom p {
+  display: block;
+  margin: 0;
+  padding: 26px 8px 4px;
+  background: linear-gradient(180deg, transparent, rgba(6, 9, 30, .82) 60%);
+  color: #f1e7c8;
+  font-size: 13px;
+  text-shadow: 0 1px 4px #000;
+}
+
+html[data-theme="light"] .ac-side-bottom p {
+  color: #f1e7c8;
+}
+
+@media (max-width: 760px) {
+  .ac-hero-center { margin-left: 8%; width: 84%; }
+  .ac-side-bottom { display: none; }
+}

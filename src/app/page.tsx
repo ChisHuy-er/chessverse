@@ -13,13 +13,27 @@ type DashboardHistoryMatch = {
 
 
 const menuItems = [
-  { name: "Tổng quan", icon: "⌂" },
-  { name: "Chơi cờ", icon: "♟" },
-  { name: "Lịch sử đấu", icon: "◷" },
-  { name: "Học viện", icon: "▤" },
-  { name: "Giải đấu", icon: "♜" },
-  { name: "Bảng xếp hạng", icon: "♛" },
-  { name: "Bạn bè", icon: "♙" },
+  { name: "Trang chủ", icon: "home" },
+  { name: "Khóa học", icon: "book" },
+  { name: "Bài học", icon: "grad" },
+  { name: "Thử thách", icon: "trophy" },
+  { name: "Đấu luyện", icon: "swords" },
+  { name: "Bảng xếp hạng", icon: "chart" },
+  { name: "Hồ sơ", icon: "people" },
+  { name: "Cài đặt", icon: "gear" },
+];
+
+const courses = [
+  { name: "Khai cuộc", en: "Opening", image: "course1" },
+  { name: "Trung cuộc", en: "Middlegame", image: "course2" },
+  { name: "Tàn cuộc", en: "Endgame", image: "course3" },
+  { name: "Chiến thuật", en: "Tactics", image: "course4" },
+];
+
+const missions = [
+  { text: "Chơi 1 ván xếp hạng", done: false },
+  { text: "Thắng 1 ván đấu", done: false },
+  { text: "Chơi 1 ván với máy", done: false },
 ];
 
 const leaderboard = [
@@ -32,7 +46,7 @@ const leaderboard = [
 export default function Home() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
-  const [activeMenu, setActiveMenu] = useState("Tổng quan");
+  const [activeMenu, setActiveMenu] = useState("Trang chủ");
   const [modal, setModal] = useState<"play" | "season" | "shop" | null>(null);
   const [notice, setNotice] = useState("");
   const [welcomeToastId, setWelcomeToastId] = useState(0);
@@ -174,19 +188,14 @@ export default function Home() {
 }
 
   function selectMenu(name: string) {
-  if (name === "Lịch sử đấu") {
-    router.push("/history");
-    return;
-  }
-
-  if (name === "Chơi cờ") {
-    router.push("/play");
+  if (name === "Đấu luyện") {
+    setModal("play");
     return;
   }
 
   setActiveMenu(name);
 
-  if (name !== "Tổng quan") {
+  if (name !== "Trang chủ") {
     setNotice(`Khu vực "${name}" sẽ được phát triển trong các bước tiếp theo.`);
   } else {
     setNotice("");
@@ -212,370 +221,393 @@ const winRate = totalMatches > 0
   ? Math.round((totalWins / totalMatches) * 100)
   : 0;
 
+// Dữ liệu biểu đồ Elo từ lịch sử đấu thật.
+const rawElo = historyMatches
+  .map((match) => match.myEloAfter)
+  .filter((value): value is number => typeof value === "number");
+
+// Lịch sử thường xếp mới nhất trước: nếu phần tử đầu khớp Elo hiện tại thì đảo lại.
+const eloSeries = (
+  user && rawElo.length > 1 && rawElo[0] === user.elo ? [...rawElo].reverse() : rawElo
+).slice(-12);
+
+const eloMin = Math.min(...eloSeries);
+const eloMax = Math.max(...eloSeries);
+const eloRange = Math.max(1, eloMax - eloMin);
+
+const chartPoints = eloSeries.map((value, index) => ({
+  x: 20 + (index / Math.max(1, eloSeries.length - 1)) * 360,
+  y: 100 - ((value - eloMin) / eloRange) * 80,
+}));
+
+const eloDelta =
+  eloSeries.length > 1
+    ? eloSeries[eloSeries.length - 1] - eloSeries[eloSeries.length - 2]
+    : 0;
+
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">♞</div>
-          <div>
-            <div className="brand-name">CHESS<span>VERSE</span></div>
-            <div className="brand-caption">THE NEXT MOVE</div>
-          </div>
+    <main className="ac-shell">
+      <aside className="ac-sidebar">
+        <div className="ac-logo">
+          <div className="ac-logo-emblem" />
+          <div className="ac-logo-name">ChessVerse</div>
+          <div className="ac-logo-caption">Học viện cờ vua</div>
         </div>
 
-        <div className="sidebar-section-label">MENU CHÍNH</div>
-        <nav className="nav-list">
+        <nav className="ac-nav">
           {menuItems.map((item) => (
             <button
               key={item.name}
               onClick={() => selectMenu(item.name)}
-              className={`nav-item ${activeMenu === item.name ? "active" : ""}`}
+              className={`ac-nav-item ${activeMenu === item.name ? "active" : ""}`}
             >
-              <span className="nav-icon">{item.icon}</span>
-              <span>{item.name}</span>
-              {item.name === "Giải đấu" && <span className="nav-dot" />}
+              <span
+                className="ac-nav-icon"
+                style={{
+                  backgroundImage: `url(/images/academy/icon-${item.icon}.png)`,
+                }}
+              />
+              <span className="ac-nav-text">{item.name}</span>
             </button>
           ))}
         </nav>
 
-        <div className="sidebar-section-label community-label">CỘNG ĐỒNG</div>
-        <button className="nav-item" onClick={() => setNotice("Tính năng cộng đồng đang được phát triển.")}>
-          <span className="nav-icon">◎</span>
-          <span>Thảo luận</span>
-        </button>
-        <button className="nav-item" onClick={() => setNotice("Tính năng tin nhắn đang được phát triển.")}>
-          <span className="nav-icon">✉</span>
-          <span>Tin nhắn</span>
-        </button>
-
-        <div className="sidebar-bottom">
-          <div className="upgrade-card">
-            <div className="upgrade-icon">✦</div>
-            <div className="upgrade-title">ChessVerse Pro</div>
-            <p>Mở khóa trải nghiệm cờ vua cao cấp.</p>
-            <button onClick={() => setNotice("Gói ChessVerse Pro sẽ được ra mắt trong tương lai.")}>
-              Khám phá Pro <span>→</span>
-            </button>
-          </div>
-
-          <button className="nav-item settings-item" onClick={() => setNotice("Cài đặt sẽ được phát triển sau.")}>
-            <span className="nav-icon">⚙</span>
-            <span>Cài đặt</span>
-          </button>
-
-          <div className="sidebar-version">CHESSVERSE WEB · VERSION 0.1</div>
+        <div className="ac-side-bottom">
+          <p>
+            “Học cờ hôm nay,
+            <br />
+            chiến thắng ngày mai”
+          </p>
         </div>
       </aside>
 
-      <section className="main-area">
-        <header className="topbar">
-          <div className="breadcrumb">
-            <span>ChessVerse</span>
-            <span className="breadcrumb-separator">/</span>
-            <strong>{activeMenu}</strong>
+      <section className="ac-main">
+        <header className="ac-topbar">
+          <div className="ac-greeting">
+            <div className="ac-crown" />
+            <div>
+              <div className="ac-greeting-title">
+                Xin chào, <span>{user?.displayName ?? "Kỳ thủ"}!</span>
+              </div>
+              <div className="ac-greeting-sub">
+                Học tập chăm chỉ, từng nước đi sẽ đưa bạn đến đỉnh cao!
+              </div>
+            </div>
           </div>
 
-          <div className="topbar-actions">
+          <div className="ac-top-actions">
             <button
-              className="icon-button notification-button"
+              className="ac-bell"
               aria-label="Thông báo"
               onClick={() => setNotice("Bạn chưa có thông báo mới.")}
             >
-              ♧
-              <span />
+              <span className="ac-bell-icon" />
             </button>
 
-      {/* Công tắc Dark Mode / Light Mode */}
-      <button
-      type="button"
-      className={`theme-toggle ${theme}`}
-      onClick={toggleTheme}
-      aria-label={
-        theme === "dark"
-          ? "Chuyển sang chế độ sáng"
-          : "Chuyển sang chế độ tối"
-      }
-      aria-pressed={theme === "light"}
-      title={theme === "dark" ? "Chế độ sáng" : "Chế độ tối"}
-    >
-      {theme === "dark" ? (
-        <span className="theme-icon moon-icon">☾</span>
-      ) : (
-        <span className="theme-icon sun-icon">☀</span>
-      )}
-    </button>
-
-    <div className="topbar-divider" />
-            
-        <div className="profile-menu-wrap">
-          <button
-            className="profile-mini"
-            onClick={() => {
-              if (user) {
-                setProfileMenuOpen(!profileMenuOpen);
-              } else {
-                setAuthMode("login");
-                setAuthOpen(true);
+            {/* Công tắc Dark Mode / Light Mode */}
+            <button
+              type="button"
+              className={`theme-toggle ac-theme ${theme}`}
+              onClick={toggleTheme}
+              aria-label={
+                theme === "dark"
+                  ? "Chuyển sang chế độ sáng"
+                  : "Chuyển sang chế độ tối"
               }
-            }}
-          >
-            <div className="avatar">
-              {user ? user.displayName.charAt(0).toUpperCase() : "?"}
-            </div>
+              aria-pressed={theme === "light"}
+              title={theme === "dark" ? "Chế độ sáng" : "Chế độ tối"}
+            >
+              {theme === "dark" ? (
+                <span className="theme-icon moon-icon">☾</span>
+              ) : (
+                <span className="theme-icon sun-icon">☀</span>
+              )}
+            </button>
 
-            <div className="profile-mini-info">
-              <strong>{user?.displayName ?? "Đăng nhập"}</strong>
-              <span>
-                <i /> {user ? `${user.elo} Elo` : "Khách"}
-              </span>
-            </div>
-
-            <span className="profile-chevron">⌄</span>
-          </button>
-
-          {profileMenuOpen && user && (
-            <div className="profile-dropdown">
-              <strong>{user.displayName}</strong>
-              <span>@{user.username}</span>
-              <span>{user.email}</span>
-              <span>{user.elo.toLocaleString("en-US")} Elo</span>
-
-              <button onClick={handleLogout}>
-                Đăng xuất
+            <div className="profile-menu-wrap">
+              <button
+                className="ac-profile"
+                onClick={() => {
+                  if (user) {
+                    setProfileMenuOpen(!profileMenuOpen);
+                  } else {
+                    setAuthMode("login");
+                    setAuthOpen(true);
+                  }
+                }}
+              >
+                <span className="ac-avatar">
+                  {user ? user.displayName.charAt(0).toUpperCase() : "?"}
+                </span>
+                <span className="ac-profile-info">
+                  <strong>{user?.displayName ?? "Đăng nhập"}</strong>
+                  <small>{user ? `${user.elo.toLocaleString("en-US")} Elo` : "Khách"}</small>
+                </span>
+                <span className="ac-chevron">⌄</span>
               </button>
-            </div>
-          )}
-        </div>
 
+              {profileMenuOpen && user && (
+                <div className="profile-dropdown">
+                  <strong>{user.displayName}</strong>
+                  <span>@{user.username}</span>
+                  <span>{user.email}</span>
+                  <span>{user.elo.toLocaleString("en-US")} Elo</span>
+
+                  <button
+                    className="ac-dropdown-link"
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      router.push("/history");
+                    }}
+                  >
+                    Lịch sử đấu
+                  </button>
+
+                  <button onClick={handleLogout}>Đăng xuất</button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
-        <div className="page-content">
-          <div className="welcome-row">
-            <div>
-              <div className="eyebrow"><span /> CHÀO MỪNG TRỞ LẠI</div>
-              <h1>
-                  Xin chào, <span>{user?.displayName ?? "Khách"}.</span>
-              </h1>
-              <p className="welcome-subtitle">Một ngày mới, một ván cờ mới. Nước đi tiếp theo của bạn là gì?</p>
-            </div>
-            <div className="date-display">
-              <span className="date-icon">◷</span>
-              <div>
-                <strong>CHESSVERSE SEASON 01</strong>
-                <span>THE AWAKENING</span>
-              </div>
-            </div>
+        {notice && (
+          <div className="ac-notice">
+            <span>ⓘ</span>
+            <p>{notice}</p>
+            <button onClick={() => setNotice("")}>×</button>
           </div>
+        )}
 
-          {notice && (
-            <div className="notice">
-              <span>ⓘ</span>
-              <p>{notice}</p>
-              <button onClick={() => setNotice("")}>×</button>
-            </div>
-          )}
-
-          <section className="hero-card">
-            <div className="hero-content">
-              <div className="hero-tag"><span /> YOUR BATTLE BEGINS HERE</div>
-              <h2>THINK.<br /><span>MOVE.</span> CONQUER.</h2>
-              <p>Thử thách trí tuệ. Chinh phục thứ hạng.<br />Viết nên hành trình huyền thoại của riêng bạn.</p>
-              <div className="hero-buttons">
-                <button className="primary-button" onClick={() => setModal("play")}>
-                  <span>♟</span> CHƠI NGAY <span className="button-arrow">→</span>
-                </button>
-                <button className="secondary-button" onClick={() => selectMenu("Học viện")}>
-                  Khám phá học viện
+        <div className="ac-grid">
+          <div className="ac-col-main">
+            {/* BANNER */}
+            <section className="ac-hero">
+              <div className="ac-hero-shade" />
+              <div className="ac-hero-center">
+                <h2>ChessVerse</h2>
+                <div className="ac-hero-sub">Học viện cờ vua</div>
+                <p>
+                  Rèn luyện tư duy - Nâng tầm chiến thuật - Chinh phục đỉnh cao
+                </p>
+                <button className="ac-gold-button" onClick={() => setModal("play")}>
+                  ▶ Chơi ngay
                 </button>
               </div>
-              <div className="hero-footnote"><span className="live-dot" /> 1,284 NGƯỜI ĐANG THI ĐẤU</div>
+              <div className="ac-hero-dots" aria-hidden="true">
+                <i />
+                <i className="on" />
+                <i />
+              </div>
+            </section>
+
+            {/* KHÓA HỌC */}
+            <section className="ac-panel">
+              <div className="ac-panel-head">
+                <h3>
+                  <span className="ac-head-icon">▤</span> Khóa học nổi bật
+                </h3>
+                <button
+                  className="ac-link"
+                  onClick={() => selectMenu("Khóa học")}
+                >
+                  Xem tất cả →
+                </button>
+              </div>
+
+              <div className="ac-courses">
+                {courses.map((course) => (
+                  <div className="ac-course" key={course.name}>
+                    <div
+                      className="ac-course-art"
+                      style={{
+                        backgroundImage: `url(/images/academy/${course.image}.jpg)`,
+                      }}
+                    />
+                    <div className="ac-course-name">{course.name}</div>
+                    <div className="ac-course-en">({course.en})</div>
+                    <div className="ac-course-soon">SẮP RA MẮT</div>
+                    <button
+                      className="ac-gold-button small"
+                      onClick={() => selectMenu("Khóa học")}
+                    >
+                      ▶ Bắt đầu học
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* THỐNG KÊ + BẢNG XẾP HẠNG */}
+            <div className="ac-bottom">
+              <section className="ac-panel ac-stats">
+                <div className="ac-panel-head">
+                  <h3>
+                    <span className="ac-head-icon">▥</span> Thống kê của bạn
+                  </h3>
+                  <span className="ac-chip">Các trận gần nhất</span>
+                </div>
+
+                <div className="ac-stats-body">
+                  <div className="ac-elo-box">
+                    <div className="ac-badge" />
+                    <div>
+                      <div className="ac-label">Elo Rating</div>
+                      <div className="ac-elo-value">
+                        {user ? user.elo.toLocaleString("en-US") : "—"}
+                        {eloDelta !== 0 && (
+                          <span className={eloDelta > 0 ? "up" : "down"}>
+                            {eloDelta > 0 ? "↑ +" : "↓ "}
+                            {eloDelta}
+                          </span>
+                        )}
+                      </div>
+                      <div className="ac-label">
+                        {totalMatches} trận đã chơi
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="ac-chart">
+                    {eloSeries.length > 1 ? (
+                      <svg viewBox="0 0 400 120" preserveAspectRatio="none">
+                        <polyline
+                          fill="none"
+                          stroke="#7aa8ff"
+                          strokeWidth="2.5"
+                          points={chartPoints
+                            .map((p) => `${p.x},${p.y}`)
+                            .join(" ")}
+                        />
+                        {chartPoints.map((p, index) => (
+                          <circle
+                            key={index}
+                            cx={p.x}
+                            cy={p.y}
+                            r="4"
+                            fill="#fff"
+                          />
+                        ))}
+                      </svg>
+                    ) : (
+                      <div className="ac-chart-empty">
+                        Chơi thêm vài ván xếp hạng để xem biểu đồ Elo.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section className="ac-panel ac-board">
+                <div className="ac-panel-head">
+                  <h3>
+                    <span className="ac-head-icon">♕</span> Bảng xếp hạng
+                  </h3>
+                  <button
+                    className="ac-link"
+                    onClick={() => selectMenu("Bảng xếp hạng")}
+                  >
+                    Xem thêm →
+                  </button>
+                </div>
+
+                {leaderboard.slice(0, 3).map((player) => (
+                  <div className="ac-board-row" key={player.rank}>
+                    <span className={`ac-rank rank-${player.rank}`}>
+                      {player.rank}
+                    </span>
+                    <span className="ac-board-avatar">
+                      {player.name.charAt(0)}
+                    </span>
+                    <strong>
+                      {player.name} {player.country}
+                    </strong>
+                    <span className="ac-board-elo">
+                      Elo {player.rating.toLocaleString("en-US")}
+                    </span>
+                  </div>
+                ))}
+              </section>
             </div>
-            <div className="hero-art">
-              <div className="hero-circle circle-one" />
-              <div className="hero-circle circle-two" />
-              <div className="hero-chess-piece">♞</div>
-              <div className="hero-art-label">STRATEGY IS<br /><strong>EVERYTHING.</strong></div>
-              <div className="hero-art-number">01</div>
-            </div>
-            <div className="hero-season">S01 / 2026</div>
-          </section>
-
-      <section className="stats-grid">
-        {/* Rating */}
-        <div className="stat-card">
-          <div className="stat-top">
-            <span>RATING CỦA BẠN</span>
-            <span className="stat-symbol">♛</span>
           </div>
 
-          <div className="stat-value">
-            {user ? user.elo.toLocaleString("en-US") : "—"}
-          </div>
+          <div className="ac-col-side">
+            {/* TỔNG QUAN */}
+            <section className="ac-panel">
+              <div className="ac-panel-head">
+                <h3>
+                  <span className="ac-head-icon">▥</span> Tổng quan
+                </h3>
+              </div>
 
-          <div className="stat-bottom">
-            <span className="stat-bar">
-              <i style={{ width: "62%" }} />
-            </span>
-            <span>Gold III</span>
-          </div>
-        </div>
-
-        {/* Tổng số trận */}
-        <div className="stat-card">
-          <div className="stat-top">
-            <span>TỔNG SỐ TRẬN</span>
-            <span className="stat-symbol">⚔</span>
-          </div>
-
-          <div className="stat-value">{totalMatches}</div>
-
-          <div className="stat-bottom">
-            <span className="muted-text">Trận đã hoàn thành</span>
-            <span>↗</span>
-          </div>
-        </div>
-
-        {/* Tỷ lệ chiến thắng */}
-        <div className="stat-card">
-          <div className="stat-top">
-            <span>TỶ LỆ CHIẾN THẮNG</span>
-            <span className="stat-symbol">◉</span>
-          </div>
-
-          <div className="stat-value">
-            {winRate}<span className="stat-percent">%</span>
-          </div>
-
-          <div className="stat-bottom">
-            <span className="muted-text">
-              {totalWins} thắng · {totalLosses} thua
-            </span>
-            <span className="positive-text">Thống kê</span>
-          </div>
-        </div>
-
-        {/* Trận hòa */}
-        <div className="stat-card">
-          <div className="stat-top">
-            <span>TRẬN HÒA</span>
-            <span className="stat-symbol">♨</span>
-          </div>
-
-          <div className="stat-value">{totalDraws}</div>
-
-          <div className="stat-bottom">
-            <span className="muted-text">Tổng số trận hòa</span>
-            <span className="streak-icon">✦</span>
-          </div>
-        </div>
-      </section>
-
-          <div className="content-grid">
-            <section className="section-card season-card">
-              <div className="section-heading">
-                <div>
-                  <div className="section-kicker">COMPETITIVE MODE</div>
-                  <h3>Mùa giải hiện tại</h3>
+              <div className="ac-overview">
+                <div className="ac-ring-wrap">
+                  <div
+                    className="win-ring big"
+                    style={{ "--p": `${winRate}` } as React.CSSProperties}
+                  >
+                    <span>
+                      {winRate}
+                      <small>%</small>
+                    </span>
+                  </div>
+                  <div className="ac-label center">Tỷ lệ thắng</div>
                 </div>
-                <span className="season-badge">ĐANG DIỄN RA</span>
-              </div>
 
-              <div className="season-banner">
-                <div className="season-banner-content">
-                  <span className="season-number">SEASON 01</span>
-                  <h4>THE<br /><span>AWAKENING</span></h4>
-                  <p>Hành trình trở thành huyền thoại bắt đầu từ đây.</p>
+                <div className="ac-overview-stats">
+                  <div>
+                    <div className="ac-label">Elo Rating</div>
+                    <div className="ac-big-number">
+                      {user ? user.elo.toLocaleString("en-US") : "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="ac-label">Thắng · Thua · Hòa</div>
+                    <div className="ac-big-number small">
+                      {totalWins} · {totalLosses} · {totalDraws}
+                    </div>
+                  </div>
                 </div>
-                <div className="season-emblem">♛</div>
               </div>
-
-              <div className="season-progress-heading">
-                <span>TIẾN ĐỘ MÙA GIẢI</span>
-                <strong>Level 12 <span>/ 30</span></strong>
-              </div>
-              <div className="progress-track"><div /></div>
-              <div className="season-reward-row">
-                <div><span className="reward-icon">♜</span><span>Phần thưởng tiếp theo</span></div>
-                <strong>Golden Knight Skin</strong>
-              </div>
-              <button className="text-link" onClick={() => setModal("season")}>Xem chi tiết mùa giải <span>→</span></button>
             </section>
 
-            <section className="section-card tournament-card">
-              <div className="section-heading">
-                <div>
-                  <div className="section-kicker">UPCOMING EVENT</div>
-                  <h3>Giải đấu sắp tới</h3>
-                </div>
-                <span className="tournament-live">● OPEN</span>
+            {/* NHIỆM VỤ */}
+            <section className="ac-panel">
+              <div className="ac-panel-head">
+                <h3>
+                  <span className="ac-head-icon">⚑</span> Nhiệm vụ hôm nay
+                </h3>
+                <span className="ac-chip">SẮP RA MẮT</span>
               </div>
 
-              <div className="tournament-visual">
-                <div className="tournament-cup">♜</div>
-                <div>
-                  <span className="tournament-type">WEEKLY CHAMPIONSHIP</span>
-                  <h4>THE ROYAL<br />CHALLENGE</h4>
-                </div>
+              <div className="ac-missions">
+                {missions.map((mission) => (
+                  <div className="ac-mission" key={mission.text}>
+                    <span
+                      className="ac-check"
+                      style={{
+                        backgroundImage: `url(/images/academy/${
+                          mission.done ? "check" : "radio"
+                        }.png)`,
+                      }}
+                    />
+                    <span>{mission.text}</span>
+                  </div>
+                ))}
               </div>
 
-              <div className="tournament-info">
-                <div><span>◷</span><div><small>THỜI GIAN</small><strong>Chủ nhật · 20:00</strong></div></div>
-                <div><span>♙</span><div><small>NGƯỜI THAM GIA</small><strong>64 / 128 người</strong></div></div>
-                <div><span>✦</span><div><small>TỔNG GIẢI THƯỞNG</small><strong className="gold-text">5,000 CV Coins</strong></div></div>
+              <div className="ac-reward">
+                <div className="ac-chest" />
+                <button
+                  className="ac-gold-button"
+                  onClick={() =>
+                    setNotice("Hệ thống nhiệm vụ sẽ được phát triển sau.")
+                  }
+                >
+                  Nhận thưởng
+                </button>
               </div>
-              <button className="outline-button" onClick={() => setNotice("Đăng ký giải đấu sẽ được kết nối sau khi hoàn thành hệ thống tài khoản.")}>Tìm hiểu giải đấu <span>→</span></button>
             </section>
           </div>
-
-          <div className="bottom-grid">
-            <section className="section-card leaderboard-card">
-              <div className="section-heading">
-                <div>
-                  <div className="section-kicker">GLOBAL RANKING</div>
-                  <h3>Bảng xếp hạng</h3>
-                </div>
-                <button className="text-link compact-link" onClick={() => selectMenu("Bảng xếp hạng")}>Xem tất cả →</button>
-              </div>
-
-              <div className="leaderboard-header">
-                <span>HẠNG</span><span>NGƯỜI CHƠI</span><span>RATING</span><span>THAY ĐỔI</span>
-              </div>
-              {leaderboard.map((player) => (
-                <div className="leaderboard-row" key={player.rank}>
-                  <span className={`rank-number rank-${player.rank}`}>{String(player.rank).padStart(2, "0")}</span>
-                  <div className="leader-player"><span className="leader-avatar">{player.name.charAt(0)}</span><strong>{player.country} {player.name}</strong></div>
-                  <strong className="leader-rating">{player.rating.toLocaleString("en-US")}</strong>
-                  <span className="leader-change">{player.change}</span>
-                </div>
-              ))}
-            </section>
-
-            <section className="section-card shop-card">
-              <div className="section-heading">
-                <div>
-                  <div className="section-kicker">CUSTOMIZE YOUR GAME</div>
-                  <h3>Cửa hàng vật phẩm</h3>
-                </div>
-                <span className="shop-currency">✦ 2,450</span>
-              </div>
-              <div className="shop-preview">
-                <div className="shop-piece">♞</div>
-                <div className="shop-item-info">
-                  <span className="shop-category">LEGENDARY SKIN</span>
-                  <h4>Golden Knight</h4>
-                  <p>Biến quân mã của bạn thành biểu tượng quyền lực.</p>
-                  <div className="shop-price">1,200 <span>CV COINS</span></div>
-                </div>
-              </div>
-              <button className="outline-button shop-button" onClick={() => setModal("shop")}>Khám phá cửa hàng <span>→</span></button>
-            </section>
-          </div>
-
-          <footer className="page-footer">
-            <span>© 2026 CHESSVERSE. ALL RIGHTS RESERVED.</span>
-            <span>BUILT FOR THE LOVE OF CHESS <strong>♟</strong></span>
-          </footer>
         </div>
       </section>
 
