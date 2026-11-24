@@ -1,4 +1,3 @@
-
 import { Prisma, MatchMode, MatchResult, MatchReason } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StockfishService } from './stockfish.service';
@@ -67,10 +66,26 @@ interface MoveAnalysis {
     label: string;
   }
 
+// Kết quả phân tích "sau nước đi" của nước trước chính là
+// "trước nước đi" của nước kế tiếp (cùng một vị trí), nên lưu lại để dùng lại.
+type EngineResult = Awaited<ReturnType<StockfishService['analyzeFen']>>;
+
+const lastAfterAnalysis = new WeakMap<
+  object,
+  { fen: string; result: EngineResult }
+>();
+
 interface EloChange {
   before: number;
   change: number;
   after: number;
+}
+
+interface PlayerProfile {
+  id: string;
+  username: string;
+  displayName: string;
+  elo: number;
 }
 
 interface OnlineMatch {
@@ -93,6 +108,13 @@ interface OnlineMatch {
   turnStartedAt: number;
   clockInterval?: ReturnType<typeof setInterval>;
   drawOfferBy: string | null;
+
+  // Thông tin hai người chơi, dùng để gửi lại khi nối lại trận.
+  whiteProfile: PlayerProfile;
+  blackProfile: PlayerProfile;
+
+  // userId -> bộ đếm giờ xử thua khi người đó mất kết nối.
+  disconnectTimers: Map<string, ReturnType<typeof setTimeout>>;
 }
 
 interface FinishResult {
@@ -103,6 +125,10 @@ interface FinishResult {
 
   // Ván xếp hạng ngắn hơn số nước này (tính cả hai bên) thì không đổi Elo.
 const MIN_RANKED_PLIES = 10;
+
+// Thời gian chờ người chơi kết nối lại trước khi bị xử thua.
+const RECONNECT_GRACE_MS = 30 * 1000;
+
 function getClockSnapshot(match: OnlineMatch) {
   const elapsed = Date.now() - match.turnStartedAt;
 
@@ -197,6 +223,9 @@ function getClockSnapshot(match: OnlineMatch) {
 
       client.data.userId = payload.sub;
 
+      // Nếu tài khoản đang có trận dở thì nối lại vào trận đó.
+      await this.resumeActiveMatch(client, payload.sub);
+
       console.log(`Online connected: ${payload.sub}`);
     } catch {
       client.disconnect(true);
@@ -207,7 +236,7 @@ function getClockSnapshot(match: OnlineMatch) {
   // 2. NGƯỜI CHƠI MẤT KẾT NỐI
   // =========================================================
 
-  async handleDisconnect(client: Socket) {
+  handleDisconnect(client: Socket) {
     const userId = client.data.userId as string | undefined;
 
     for (const mode of ['ranked', 'casual'] as const) {
@@ -223,25 +252,148 @@ function getClockSnapshot(match: OnlineMatch) {
     const matchId = this.socketMatches.get(client.id);
 
     if (matchId) {
+      this.socketMatches.delete(client.id);
+
       const match = this.matches.get(matchId);
 
+      // Không xử thua ngay: cho người chơi thời gian để kết nối lại.
       if (match && !match.finished && userId) {
-        const winner =
-          userId === match.white ? match.black : match.white;
-
-        await this.finishMatch(match, {
-          result: 'win',
-          winner,
-          reason: 'disconnect',
-        });
+        this.startDisconnectGrace(match, userId);
       }
-
-      this.socketMatches.delete(client.id);
     }
 
     if (userId) {
       console.log(`Online disconnected: ${userId}`);
     }
+  }
+
+  // =========================================================
+  // 2b. KẾT NỐI LẠI TRẬN ĐANG CHƠI
+  // =========================================================
+
+  // Bắt đầu đếm ngược: hết giờ chờ mà chưa quay lại thì xử thua.
+  private startDisconnectGrace(match: OnlineMatch, userId: string) {
+    if (match.disconnectTimers.has(userId)) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      match.disconnectTimers.delete(userId);
+
+      if (match.finished) {
+        return;
+      }
+
+      const winner =
+        userId === match.white ? match.black : match.white;
+
+      void this.finishMatch(match, {
+        result: 'win',
+        winner,
+        reason: 'disconnect',
+      });
+    }, RECONNECT_GRACE_MS);
+
+    match.disconnectTimers.set(userId, timer);
+
+    // Báo cho đối thủ còn lại trong phòng.
+    this.server.to(match.roomId).emit('match:opponent-disconnected', {
+      message: `Đối thủ mất kết nối. Nếu không quay lại sau ${
+        RECONNECT_GRACE_MS / 1000
+      } giây, bạn sẽ thắng.`,
+      graceMs: RECONNECT_GRACE_MS,
+    });
+  }
+
+  // Gắn socket mới vào trận đang chơi của tài khoản và gửi lại trạng thái ván.
+  private async resumeActiveMatch(client: Socket, userId: string) {
+    let match: OnlineMatch | undefined;
+
+    for (const item of this.matches.values()) {
+      if (
+        !item.finished &&
+        (item.white === userId || item.black === userId)
+      ) {
+        match = item;
+        break;
+      }
+    }
+
+    if (!match) {
+      return;
+    }
+
+    // Chỉ một thiết bị/tab được điều khiển trận: đóng kết nối cũ của cùng tài khoản.
+    for (const [socketId, matchId] of this.socketMatches) {
+      if (matchId !== match.id || socketId === client.id) {
+        continue;
+      }
+
+      const oldSocket = this.server.sockets.sockets.get(socketId);
+
+      if (oldSocket?.data.userId === userId) {
+        this.socketMatches.delete(socketId);
+
+        oldSocket.emit('match:replaced', {
+          message: 'Trận đấu đã được mở ở một tab hoặc thiết bị khác.',
+        });
+        oldSocket.disconnect(true);
+      }
+    }
+
+    // Quay lại kịp: hủy đếm ngược xử thua.
+    const timer = match.disconnectTimers.get(userId);
+
+    if (timer) {
+      clearTimeout(timer);
+      match.disconnectTimers.delete(userId);
+    }
+
+    this.socketMatches.set(client.id, match.id);
+    await client.join(match.roomId);
+
+    const opponentId =
+      userId === match.white ? match.black : match.white;
+
+    const lastMove = match.moves[match.moves.length - 1];
+
+    client.emit('match:resume', {
+      matchId: match.id,
+      mode: match.mode,
+      fen: match.game.fen(),
+      clock: getClockSnapshot(match),
+      color: userId === match.white ? 'white' : 'black',
+      players: {
+        white: match.white,
+        black: match.black,
+        whiteProfile: match.whiteProfile,
+        blackProfile: match.blackProfile,
+      },
+      lastMove: lastMove
+        ? { from: lastMove.from, to: lastMove.to }
+        : null,
+      moves: match.moves.map((item) => ({
+        from: item.from,
+        to: item.to,
+        beforeFen: item.beforeFen,
+      })),
+      drawOffer:
+        match.drawOfferBy && match.drawOfferBy !== userId
+          ? {
+              from: match.drawOfferBy,
+              fromColor:
+                match.drawOfferBy === match.white ? 'white' : 'black',
+            }
+          : null,
+      drawOfferSent: match.drawOfferBy === userId,
+      opponentDisconnected: match.disconnectTimers.has(opponentId),
+    });
+
+    client.to(match.roomId).emit('match:opponent-reconnected', {
+      message: 'Đối thủ đã kết nối lại.',
+    });
+
+    console.log(`Match resumed: ${match.id} | User: ${userId}`);
   }
 
   // =========================================================
@@ -270,10 +422,8 @@ function getClockSnapshot(match: OnlineMatch) {
       return;
     }
 
+    // Socket này đã được nối lại vào trận đang chơi (match:resume) thì bỏ qua.
     if (this.socketMatches.has(client.id)) {
-      client.emit('match:error', {
-        message: 'Bạn đang ở trong một trận đấu.',
-      });
       return;
     }
 
@@ -410,6 +560,10 @@ function getClockSnapshot(match: OnlineMatch) {
 
         // Chưa có ai đề nghị hòa.
         drawOfferBy: null,
+
+        whiteProfile: whiteUser,
+        blackProfile: blackUser,
+        disconnectTimers: new Map(),
       };
 
       this.matches.set(matchId, match);
@@ -558,10 +712,12 @@ function getClockSnapshot(match: OnlineMatch) {
         .then(async () => {
           try {
             // Phân tích vị trí trước khi người chơi đi.
-            const before = await this.stockfish.analyzeFen(
-              move.beforeFen,
-              10,
-            );
+            const cached = lastAfterAnalysis.get(match);
+
+            const before: EngineResult =
+              cached && cached.fen === move.beforeFen
+                ? cached.result
+                : await this.stockfish.analyzeFen(move.beforeFen, 10);
 
             const beforeCp = this.scoreToCp(
               before.scoreType,
@@ -577,6 +733,11 @@ function getClockSnapshot(match: OnlineMatch) {
                 move.afterFen,
                 10,
               );
+
+              lastAfterAnalysis.set(match, {
+                fen: move.afterFen,
+                result: after,
+              });
 
               const rawAfterCp = this.scoreToCp(
                 after.scoreType,
@@ -1151,6 +1312,12 @@ function getClockSnapshot(match: OnlineMatch) {
 
     // Đánh dấu trận đã kết thúc.
     match.finished = true;
+
+    // Hủy mọi bộ đếm chờ kết nối lại.
+    for (const timer of match.disconnectTimers.values()) {
+      clearTimeout(timer);
+    }
+    match.disconnectTimers.clear();
 
     // Dừng bộ đếm thời gian ở backend.
     if (match.clockInterval) {

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -204,6 +203,20 @@ interface FinishedData {
     blackAverageCpl: number | null;
     moves: AnalysisMove[];
   };
+}
+
+interface ResumeData {
+  matchId: string;
+  mode: OnlineMode;
+  fen: string;
+  clock: ClockSnapshot;
+  color: "white" | "black";
+  players: MatchFoundData["players"];
+  lastMove: { from: string; to: string } | null;
+  moves: { from: string; to: string; beforeFen: string }[];
+  drawOffer: DrawOfferedData | null;
+  drawOfferSent: boolean;
+  opponentDisconnected: boolean;
 }
 
 interface Props {
@@ -493,6 +506,12 @@ export default function OnlineMatchOverlay({
 
   const [claimingDraw, setClaimingDraw] = useState(false);
 
+  // Đang tự kết nối lại sau khi rớt mạng.
+  const [reconnecting, setReconnecting] = useState(false);
+
+  // Không thể nối lại nữa (hết lượt thử, bị mở ở tab khác, ván đã kết thúc).
+  const [connectionLost, setConnectionLost] = useState(false);
+
   
   const displayedClock = useMemo(() => {
     if (!clock) {
@@ -557,16 +576,63 @@ export default function OnlineMatchOverlay({
 
         if (!active) return;
 
+        // Token dùng cho lần kết nối đầu. Khi tự nối lại sẽ lấy token mới
+        // vì token socket chỉ sống 2 phút.
+        let firstToken: string | null = data.token;
+        let inMatch = false;
+        let gameOver = false;
+        let replaced = false;
+        let hasConnectedBefore = false;
+        let resumeTimer: ReturnType<typeof setTimeout> | null = null;
+
         const newSocket = io(BACKEND_URL, {
-          auth: { token: data.token },
+          auth: (cb) => {
+            if (firstToken) {
+              const token = firstToken;
+              firstToken = null;
+              cb({ token });
+              return;
+            }
+
+            fetch("/api/auth/socket-token", {
+              method: "POST",
+              credentials: "include",
+            })
+              .then((res) => res.json())
+              .then((json) => cb({ token: json?.token ?? "" }))
+              .catch(() => cb({ token: "" }));
+          },
           transports: ["websocket", "polling"],
-          reconnection: false,
+          reconnection: true,
+          reconnectionAttempts: 8,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 3000,
         });
 
         activeSocket = newSocket;
         setSocket(newSocket);
 
         newSocket.on("connect", () => {
+          const isReconnect = hasConnectedBefore;
+          hasConnectedBefore = true;
+
+          // Nối lại giữa trận: máy chủ tự gửi lại ván (match:resume).
+          // Nếu 4 giây không thấy thì ván đã kết thúc trong lúc mất kết nối.
+          if (isReconnect && inMatch) {
+            setStatus("Đang kết nối lại");
+            setMessage("Đã kết nối lại, đang đồng bộ ván đấu...");
+
+            resumeTimer = setTimeout(() => {
+              setReconnecting(false);
+              setConnectionLost(true);
+              setMessage(
+                "Ván đấu đã kết thúc trong lúc bạn mất kết nối. Hãy xem kết quả ở mục Lịch sử đấu.",
+              );
+            }, 4000);
+
+            return;
+          }
+
           setStatus("Đang tìm trận");
 
           setMessage(
@@ -734,10 +800,134 @@ export default function OnlineMatchOverlay({
           },
         );
 
-        newSocket.on("disconnect", () => {
-          if (active) {
-            setStatus("Đã ngắt kết nối");
+        newSocket.on("match:found", () => {
+          inMatch = true;
+        });
+
+        // Nhận lại toàn bộ trạng thái ván khi nối lại hoặc mở lại trang.
+        newSocket.on("match:resume", (data: ResumeData) => {
+          inMatch = true;
+
+          if (resumeTimer) {
+            clearTimeout(resumeTimer);
+            resumeTimer = null;
           }
+
+          const captured: CapturedPiece[] = [];
+
+          for (const item of data.moves) {
+            const piece = getCapturedPiece(
+              item.beforeFen,
+              item.from,
+              item.to,
+            );
+
+            if (piece) {
+              captured.push(piece);
+            }
+          }
+
+          setMatch({
+            matchId: data.matchId,
+            fen: data.fen,
+            mode: data.mode,
+            clock: data.clock,
+            players: data.players,
+          });
+          setMyColor(data.color);
+          setFen(data.fen);
+          fenRef.current = data.fen;
+          setLiveCapturedPieces(captured);
+          setLastMove(data.lastMove);
+          setClock(data.clock);
+          setClockReceivedAt(Date.now());
+          setDrawOffer(data.drawOffer);
+          setDrawOfferSent(data.drawOfferSent);
+          setShowResignConfirm(false);
+          setFinished(null);
+          setShowResultOverlay(false);
+          setSelectedReviewPly(null);
+          setSelected(null);
+          setLegalTargets([]);
+          setPromotionChoice(null);
+          setOpponentDisconnected(data.opponentDisconnected);
+          setReconnecting(false);
+          setConnectionLost(false);
+          setStatus("Đã vào lại trận");
+          setMessage("Đã kết nối lại. Ván đấu tiếp tục!");
+        });
+
+        newSocket.on(
+          "match:opponent-reconnected",
+          (data: { message: string }) => {
+            setOpponentDisconnected(false);
+            setMessage(data.message);
+          },
+        );
+
+        newSocket.on("match:replaced", () => {
+          replaced = true;
+        });
+
+        // Ván kết thúc: không cần tự nối lại nữa.
+        newSocket.on("match:finished", () => {
+          gameOver = true;
+          inMatch = false;
+          newSocket.io.reconnection(false);
+
+          if (resumeTimer) {
+            clearTimeout(resumeTimer);
+            resumeTimer = null;
+          }
+        });
+
+        newSocket.on("disconnect", (reason) => {
+          if (!active || gameOver) {
+            return;
+          }
+
+          // Máy chủ chủ động ngắt (token sai, hoặc trận được mở ở tab khác):
+          // không tự nối lại.
+          if (reason === "io server disconnect") {
+            setReconnecting(false);
+            setConnectionLost(true);
+            setStatus("Đã ngắt kết nối");
+            setMessage(
+              replaced
+                ? "Trận đấu đã được mở ở một tab hoặc thiết bị khác."
+                : "Máy chủ đã ngắt kết nối. Hãy đăng nhập lại.",
+            );
+            return;
+          }
+
+          // Mình chủ động đóng.
+          if (reason === "io client disconnect") {
+            setStatus("Đã ngắt kết nối");
+            return;
+          }
+
+          // Rớt mạng: socket.io tự nối lại.
+          setStatus("Mất kết nối");
+
+          if (inMatch) {
+            setReconnecting(true);
+            setMessage(
+              "Mất kết nối. Đang kết nối lại... Bạn có 30 giây trước khi bị xử thua.",
+            );
+          } else {
+            setMessage("Mất kết nối. Đang kết nối lại...");
+          }
+        });
+
+        newSocket.io.on("reconnect_failed", () => {
+          if (!active || gameOver) {
+            return;
+          }
+
+          setReconnecting(false);
+          setConnectionLost(true);
+          setStatus("Kết nối thất bại");
+          setMessage("Không thể kết nối lại máy chủ.");
         });
       } catch (error) {
         if (!active) return;
@@ -968,8 +1158,7 @@ export default function OnlineMatchOverlay({
     if (
       !match ||
       !myColor ||
-      finished ||
-      opponentDisconnected
+      finished
     ) {
       return;
     }
@@ -1083,7 +1272,7 @@ export default function OnlineMatchOverlay({
   // =========================================================
 
   function leaveMatch() {
-    if (match && !finished) {
+    if (match && !finished && !connectionLost) {
       if (socket?.connected) {
         socket.emit("match:resign");
 
@@ -1217,10 +1406,25 @@ function confirmResign() {
           </button>
         </div>
 
+        {/* TRẠNG THÁI KẾT NỐI */}
+        {(reconnecting || connectionLost) && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-300">
+            <span>{message}</span>
+            {connectionLost && (
+              <button
+                onClick={onClose}
+                className="shrink-0 rounded-lg border border-yellow-500/50 px-3 py-1 font-semibold transition hover:bg-yellow-500/10"
+              >
+                Đóng
+              </button>
+            )}
+          </div>
+        )}
+
         {/* WAITING */}
 
         {!match && (
-          <div className="flex min-h-300px flex-col items-center justify-center text-center">
+          <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
             <div className="mb-6 text-6xl text-yellow-400">
               ♞
             </div>
@@ -1244,7 +1448,7 @@ function confirmResign() {
 
             {/* CHESSBOARD */}
 
-            <div className="mx-auto w-full max-w-620px">
+            <div className="mx-auto w-full max-w-[620px]">
 
               
             {/* OPPONENT */}
@@ -1351,8 +1555,7 @@ function confirmResign() {
                         onClick={() => handleSquareClick(square)}
                         disabled={
                           !isMyTurn ||
-                          !!finished ||
-                          opponentDisconnected
+                          !!finished
                         }
                         className={[
                           "relative flex aspect-square items-center justify-center transition",
@@ -1517,7 +1720,7 @@ function confirmResign() {
 
             {/* RIGHT PANEL */}
 
-            <div className="flex min-h-400px flex-col gap-4">
+            <div className="flex min-h-[400px] flex-col gap-4">
 
               {/* AFTER FINISH */}
 
@@ -1714,7 +1917,7 @@ function confirmResign() {
                         </p>
                       </div>
                     ) : (
-                      <div className="max-h-430px flex-1 space-y-1 overflow-y-auto p-2">
+                      <div className="max-h-[430px] flex-1 space-y-1 overflow-y-auto p-2">
                         {allAnalysisMoves.map((item) => {
                           const isSelected =
                             selectedReviewPly === item.ply;
@@ -1897,7 +2100,7 @@ function confirmResign() {
 
                   {/* RESIGN */}
 
-                  {!opponentDisconnected && (
+                  {(
                     <button
                       onClick={resign}
                       className="w-full rounded-xl border border-red-500/50 py-3 font-semibold text-red-400 transition hover:bg-red-500/10"

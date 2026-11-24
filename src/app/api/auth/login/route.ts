@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL =
@@ -14,6 +13,7 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-forwarded-for": request.headers.get("x-forwarded-for") ?? "",
         },
         body: JSON.stringify(body),
         cache: "no-store",
