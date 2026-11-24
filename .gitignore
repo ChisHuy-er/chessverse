@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+ui-code.txt
+ui-cau-truc.txt
+project-tree.txt
