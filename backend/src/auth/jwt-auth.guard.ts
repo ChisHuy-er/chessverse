@@ -1,4 +1,3 @@
-
 import {
   CanActivate,
   ExecutionContext,
@@ -12,6 +11,7 @@ interface JwtPayload {
   sub: string;
   email: string;
   username: string;
+  purpose?: string;
 }
 
 @Injectable()
@@ -33,7 +33,10 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
-
+        // Token dùng riêng cho socket không được dùng để gọi API.
+        if (payload.purpose) {
+          throw new UnauthorizedException();
+        }
       request.user = payload;
 
       return true;

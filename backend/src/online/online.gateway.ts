@@ -2,6 +2,7 @@
 import { Prisma, MatchMode, MatchResult, MatchReason } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StockfishService } from './stockfish.service';
+import { OnModuleInit } from '@nestjs/common';
 
 import {
   ConnectedSocket,
@@ -100,44 +101,38 @@ interface FinishResult {
   reason: string;
 }
 
-const PIECE_VALUES: Record<string, number> = {
-  p: 1,
-  n: 3,
-  b: 3,
-  r: 5,
-  q: 9,
-  k: 0,
-};
+  // Ván xếp hạng ngắn hơn số nước này (tính cả hai bên) thì không đổi Elo.
+const MIN_RANKED_PLIES = 10;
+function getClockSnapshot(match: OnlineMatch) {
+  const elapsed = Date.now() - match.turnStartedAt;
 
-  function getClockSnapshot(match: OnlineMatch) {
-    const elapsed = Date.now() - match.turnStartedAt;
+  const whiteMs = Math.max(
+    0,
+    match.whiteTimeMs - (match.game.turn() === 'w' ? elapsed : 0),
+  );
 
-    const whiteMs = Math.max(
-      0,
-      match.whiteTimeMs - (match.game.turn() === 'w' ? elapsed : 0),
-    );
+  const blackMs = Math.max(
+    0,
+    match.blackTimeMs - (match.game.turn() === 'b' ? elapsed : 0),
+  );
 
-    const blackMs = Math.max(
-      0,
-      match.blackTimeMs - (match.game.turn() === 'b' ? elapsed : 0),
-    );
-
-    return {
-      whiteMs,
-      blackMs,
-      activeColor: match.game.turn() === 'w' ? 'white' : 'black',
-    };
-  }
+  return {
+    whiteMs,
+    blackMs,
+    activeColor: match.game.turn() === 'w' ? 'white' : 'black',
+  };
+}
 
   @WebSocketGateway({
     cors: {
-      origin: true,
+      // Khi triển khai thật, đổi thành địa chỉ web của bạn.
+      origin: ['http://localhost:3001'],
       credentials: true,
     },
   })
   export class OnlineGateway
 
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
 {
   @WebSocketServer()
   server: Server;
@@ -155,6 +150,29 @@ const PIECE_VALUES: Record<string, number> = {
     private readonly prisma: PrismaService,
     private readonly stockfish: StockfishService,
   ) {}
+
+    // Dọn các trận bị kẹt "đang chơi" do server tắt đột ngột.
+  async onModuleInit() {
+    const result = await this.prisma.match.updateMany({
+      where: { status: 'IN_PROGRESS' },
+      data: { status: 'ABORTED', finishedAt: new Date() },
+    });
+    if (result.count > 0) {
+      console.log(`Aborted ${result.count} stale match(es)`);
+    }
+  }
+
+  private hasActiveMatch(userId: string): boolean {
+    for (const match of this.matches.values()) {
+      if (
+        !match.finished &&
+        (match.white === userId || match.black === userId)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   // =========================================================
   // 1. XÁC THỰC SOCKET
@@ -255,6 +273,13 @@ const PIECE_VALUES: Record<string, number> = {
     if (this.socketMatches.has(client.id)) {
       client.emit('match:error', {
         message: 'Bạn đang ở trong một trận đấu.',
+      });
+      return;
+    }
+
+        if (this.hasActiveMatch(userId)) {
+      client.emit('match:error', {
+        message: 'Tài khoản của bạn đang ở trong một trận đấu khác.',
       });
       return;
     }
@@ -1035,81 +1060,16 @@ const PIECE_VALUES: Record<string, number> = {
       by: userId,
     });
   }
-  // =========================================================
-  // 10. TÍNH VẬT CHẤT VÀ LỢI THẾ
-  // =========================================================
 
-  private getMaterialDifference(game: Chess): number {
-    let white = 0;
-    let black = 0;
-
-    for (const row of game.board()) {
-      for (const piece of row) {
-        if (!piece) continue;
-
-        const value = PIECE_VALUES[piece.type] ?? 0;
-
-        if (piece.color === 'w') {
-          white += value;
-        } else {
-          black += value;
-        }
-      }
-    }
-
-    return white - black;
-  }
-
-  private getDrawEloChanges(
-    match: OnlineMatch,
-    reason: string,
-  ): { white: number; black: number } {
-    if (reason === 'insufficient_material') {
-      return { white: 0, black: 0 };
-    }
-
-    const materialDiff = this.getMaterialDifference(
-      match.game,
-    );
-
-    const evaluation =
-      match.lastEvalWhiteCp ?? materialDiff * 100;
-
-    const advantage = Math.abs(evaluation);
-
-    if (
-      reason === 'fifty_move_rule' &&
-      advantage >= 400
-    ) {
-      return evaluation > 0
-        ? { white: 2, black: -2 }
-        : { white: -2, black: 2 };
-    }
-
-    if (advantage >= 50) {
-      return evaluation > 0
-        ? { white: 1, black: -1 }
-        : { white: -1, black: 1 };
-    }
-
-    return { white: 0, black: 0 };
-  }
-
-  // =========================================================
-  // 11. TÍNH ELO KHI THẮNG
-  // =========================================================
-
-  private getWinnerEloGain(
+    private getWinnerEloGain(
     match: OnlineMatch,
     winner: string,
   ): number {
-    const winnerColor =
-      winner === match.white ? 'w' : 'b';
+    const winnerColor = winner === match.white ? 'w' : 'b';
 
     const winnerMoves = match.analysis.filter(
       (item) =>
-        item.color === winnerColor &&
-        item.centipawnLoss !== null,
+        item.color === winnerColor && item.centipawnLoss !== null,
     );
 
     if (winnerMoves.length === 0) {
@@ -1117,8 +1077,7 @@ const PIECE_VALUES: Record<string, number> = {
     }
 
     const totalCpl = winnerMoves.reduce(
-      (sum, item) =>
-        sum + (item.centipawnLoss ?? 0),
+      (sum, item) => sum + (item.centipawnLoss ?? 0),
       0,
     );
 
@@ -1129,7 +1088,7 @@ const PIECE_VALUES: Record<string, number> = {
 
     return 9;
   }
-
+  
   // =========================================================
   // 12. ÁNH XẠ LÝ DO VÀ KẾT QUẢ DATABASE
   // =========================================================
@@ -1269,15 +1228,18 @@ const PIECE_VALUES: Record<string, number> = {
             return null;
           }
 
-          let whiteDelta = 0;
+           let whiteDelta = 0;
           let blackDelta = 0;
 
-          if (match.mode === 'ranked') {
-            if (outcome.result === 'win' && outcome.winner) {
-              const gain = this.getWinnerEloGain(
-                match,
-                outcome.winner,
-              );
+            // Chỉ tính Elo cho ván xếp hạng đủ dài (chống cày Elo).
+            // Thắng/thua: đổi 9-11 điểm. Hòa: không đổi.
+            if (
+              match.mode === 'ranked' &&
+              match.moves.length >= MIN_RANKED_PLIES &&
+              outcome.result === 'win' &&
+              outcome.winner
+            ) {
+              const gain = this.getWinnerEloGain(match, outcome.winner);
 
               if (outcome.winner === match.white) {
                 whiteDelta = gain;
@@ -1286,40 +1248,26 @@ const PIECE_VALUES: Record<string, number> = {
                 whiteDelta = -gain;
                 blackDelta = gain;
               }
-            } else {
-              const changes = this.getDrawEloChanges(
-                match,
-                outcome.reason,
-              );
-
-              whiteDelta = changes.white;
-              blackDelta = changes.black;
             }
-          }
 
-          if (whiteDelta !== 0) {
-            await tx.user.update({
-              where: { id: match.white },
-              data: {
-                elo: { increment: whiteDelta },
-              },
-            });
-          }
+            // Elo không được xuống dưới 0.
+            const whiteAfter = Math.max(0, whiteUser.elo + whiteDelta);
+            const blackAfter = Math.max(0, blackUser.elo + blackDelta);
+            whiteDelta = whiteAfter - whiteUser.elo;
+            blackDelta = blackAfter - blackUser.elo;
 
-          if (blackDelta !== 0) {
-            await tx.user.update({
-              where: { id: match.black },
-              data: {
-                elo: { increment: blackDelta },
-              },
-            });
-          }
-
-          const whiteAfter =
-            whiteUser.elo + whiteDelta;
-
-          const blackAfter =
-            blackUser.elo + blackDelta;
+            if (whiteDelta !== 0) {
+              await tx.user.update({
+                where: { id: match.white },
+                data: { elo: { increment: whiteDelta } },
+              });
+            }
+            if (blackDelta !== 0) {
+              await tx.user.update({
+                where: { id: match.black },
+                data: { elo: { increment: blackDelta } },
+              });
+            }
 
           await tx.match.update({
             where: { id: match.id },
@@ -1410,21 +1358,6 @@ const PIECE_VALUES: Record<string, number> = {
     );
 
     this.matches.delete(match.id);
-  }
-
-  private findSocketId(userId: string): string {
-    for (const [socketId, matchId] of this.socketMatches) {
-      const match = this.matches.get(matchId);
-
-      if (
-        match &&
-        (match.white === userId || match.black === userId)
-      ) {
-        return socketId;
-      }
-    }
-
-    return '';
   }
 
   // =========================================================
