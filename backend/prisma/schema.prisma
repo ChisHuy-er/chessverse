@@ -1,0 +1,99 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MatchMode {
+  RANKED
+  CASUAL
+}
+
+enum MatchStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABORTED
+}
+
+enum MatchResult {
+  WHITE_WIN
+  BLACK_WIN
+  DRAW
+}
+
+enum MatchReason {
+  CHECKMATE
+  RESIGN
+  DISCONNECT
+  TIMEOUT
+  STALEMATE
+  INSUFFICIENT_MATERIAL
+  THREEFOLD_REPETITION
+  FIFTY_MOVE_RULE
+  SEVENTY_FIVE_MOVE_RULE
+  DRAW_AGREEMENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique @db.VarChar(255)
+  username     String   @unique @db.VarChar(30)
+  passwordHash String   @map("password_hash")
+  displayName  String   @map("display_name") @db.VarChar(50)
+  avatarUrl    String?  @map("avatar_url")
+  elo          Int      @default(500)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  whiteMatches Match[]  @relation("WhiteMatches")
+  blackMatches Match[]  @relation("BlackMatches")
+
+  @@map("users")
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  mode        MatchMode
+  status      MatchStatus @default(IN_PROGRESS)
+  result      MatchResult?
+  reason      MatchReason?
+
+  whiteUserId String
+  blackUserId String
+
+  whiteUser   User        @relation("WhiteMatches", fields: [whiteUserId], references: [id])
+  blackUser   User        @relation("BlackMatches", fields: [blackUserId], references: [id])
+
+  pgn         String?     @db.Text
+  finalFen    String?     @map("final_fen") @db.Text
+
+  // Lịch sử nước đi và FEN trước/sau mỗi nước.
+  moves       Json        @default("[]")
+
+  // Kết quả phân tích Stockfish từng nước.
+  analysis    Json?
+
+  // Elo của quân trắng.
+  whiteEloBefore Int?
+  whiteEloChange Int       @default(0)
+  whiteEloAfter  Int?
+
+  // Elo của quân đen.
+  blackEloBefore Int?
+  blackEloChange Int       @default(0)
+  blackEloAfter  Int?
+
+  startedAt   DateTime    @default(now()) @map("started_at")
+  finishedAt  DateTime?   @map("finished_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@index([whiteUserId, createdAt])
+  @@index([blackUserId, createdAt])
+  @@index([mode, status])
+  @@map("matches")
+}
