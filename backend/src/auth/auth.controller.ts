@@ -13,6 +13,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { hintsFrom } from './geo';
 import {
   LoginRateLimitGuard,
   RegisterRateLimitGuard,
@@ -24,15 +25,15 @@ export class AuthController {
 
   @Post('register')
   @UseGuards(RegisterRateLimitGuard)
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  register(@Body() dto: RegisterDto, @Req() req: { headers: Record<string, string | string[] | undefined> }) {
+    return this.authService.register(dto, hintsFrom(req.headers));
   }
 
   @Post('login')
   @UseGuards(LoginRateLimitGuard)
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: { headers: Record<string, string | string[] | undefined> }) {
+    return this.authService.login(dto, hintsFrom(req.headers));
   }
 
   @Get('me')

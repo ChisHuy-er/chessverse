@@ -1,0 +1,53 @@
+/* Ảnh đại diện + khung (dùng chung toàn trang) */
+
+/* Ảnh đại diện có khung: đặt width hoặc height cho .pa, phần còn lại theo tỉ lệ khung */
+.pa {
+  position: relative;
+  display: inline-block;
+  aspect-ratio: 1 / var(--ar, 1.1);
+  flex: none;
+  user-select: none;
+}
+
+.pa-disc {
+  position: absolute;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #2f4fb0, #0c1647 70%);
+}
+
+.pa-disc img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pa-disc i {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #f4d37b;
+  font-family: var(--font-display), Georgia, serif;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 2.6em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .5);
+}
+
+.pa-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .45));
+}
+
+/* Ảnh đại diện nhỏ ở góc phải thanh trên cùng */
+.ac-profile .pa.ac-pa {
+  height: 50px;
+  margin: -8px -2px -8px -8px;
+  font-size: 7px;
+}

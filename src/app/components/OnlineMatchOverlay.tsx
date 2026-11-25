@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Chess, type Square } from "chess.js";
 import { io, type Socket } from "socket.io-client";
 
@@ -30,6 +30,42 @@ import ConnectionBanner from "./online/ConnectionBanner";
 import ResignConfirmDialog from "./online/ResignConfirmDialog";
 import ResultOverlay from "./online/ResultOverlay";
 import WaitingScreen from "./online/WaitingScreen";
+import { playSound } from "../lib/sound";
+import { BOARD_THEMES, fetchWallet, pieceFx, pieceSkinPath, type FxSprite, type PieceFx } from "../lib/shop";
+import { getTier } from "../lib/rank";
+import { getCover } from "../lib/appearance";
+import { useBoardView } from "../lib/boardView";
+import PlayerAvatar from "./PlayerAvatar";
+import Flag from "./Flag";
+import TierBadge from "./TierBadge";
+import SettingsMenu from "./SettingsMenu";
+import "./online/match.css";
+
+// Biểu cảm nhanh (mã gửi qua máy chủ → hình hiển thị)
+const EMOTES = [
+  { id: "smile", icon: "😀", label: "Vui" },
+  { id: "like", icon: "👍", label: "Hay" },
+  { id: "clap", icon: "👏", label: "Vỗ tay" },
+  { id: "target", icon: "🎯", label: "Chuẩn xác" },
+] as const;
+
+// Hiệu ứng chuyển động: chạy lần lượt các khung hình trong một ảnh dải ngang
+function Sprite({ s, kind, loop = false }: { s: FxSprite; kind: string; loop?: boolean }) {
+  return (
+    <span
+      className={`mx-sprite ${kind}${loop ? " loop" : ""}`}
+      style={
+        {
+          backgroundImage: `url(${s.src})`,
+          aspectRatio: String(s.ratio),
+          "--n": s.frames,
+        } as CSSProperties
+      }
+    />
+  );
+}
+
+const EMOTE_ICON: Record<string, string> = Object.fromEntries(EMOTES.map((e) => [e.id, e.icon]));
 
 interface Props {
   mode: OnlineMode;
@@ -42,6 +78,43 @@ export default function OnlineMatchOverlay({
   onClose,
 }: Props) {
   const [socket, setSocket] = useState<Socket | null>(null);
+  // Bàn cờ đang dùng (mua ở Cửa hàng)
+  const [boardTheme, setBoardTheme] = useState("classic");
+  const board = BOARD_THEMES[boardTheme] ?? BOARD_THEMES.classic;
+  // Bộ quân cờ đang dùng (mua ở Cửa hàng); undefined = quân mặc định
+  const [pieceSkin, setPieceSkin] = useState<string | undefined>(undefined);
+  // Hiệu ứng đặc biệt đi kèm bộ quân (vd. Hắc Ám); undefined = không có
+  const [fx, setFx] = useState<PieceFx | undefined>(undefined);
+  // Kiểu bàn cờ 2D / 3D (lưu trên trình duyệt, dùng chung với trang Xem lại)
+  const [boardView, setBoardView] = useBoardView();
+  // Hiệu ứng vừa xảy ra trên bàn: đi quân / ăn quân
+  const [fxEvent, setFxEvent] = useState<{ to: string; kind: "move" | "capture" | "promote"; id: number } | null>(null);
+
+  useEffect(() => {
+    fetchWallet().then((w) => {
+      if (w?.boardTheme) setBoardTheme(w.boardTheme);
+      setPieceSkin(pieceSkinPath(w?.pieceSet));
+      setFx(pieceFx(w?.pieceSet));
+    });
+  }, []);
+
+  // Vẽ một quân: ảnh của bộ skin nếu có, không thì ký tự cờ mặc định.
+  function renderPiece(key: string, size: "board" | "small" = "board") {
+    if (!pieceSkin) return pieceSymbols[key];
+
+    return (
+      <img
+        src={`${pieceSkin}/${key}.webp`}
+        alt=""
+        draggable={false}
+        className={
+          size === "board"
+            ? "pointer-events-none h-[92%] w-[92%] object-contain drop-shadow-[0_3px_3px_rgba(0,0,0,0.55)]"
+            : "inline-block h-[1.15em] w-[1.15em] object-contain align-middle"
+        }
+      />
+    );
+  }
   // Đồng hồ do backend gửi về.
   const [clock, setClock] = useState<ClockSnapshot | null>(null);
 
@@ -73,6 +146,33 @@ export default function OnlineMatchOverlay({
   const [fen, setFen] = useState(INITIAL_FEN);
   // FEN trước nước đi mới nhất, dùng để xác định quân bị bắt.
   const fenRef = useRef(INITIAL_FEN);
+
+  // Danh sách nước đi (SAN) để hiện bảng Lịch sử nước đi
+  const [sanList, setSanList] = useState<string[]>([]);
+  const historyRef = useRef<HTMLDivElement>(null);
+
+  // Tự cuộn xuống nước mới nhất
+  useEffect(() => {
+    const el = historyRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [sanList.length]);
+
+  // Bong bóng biểu cảm / tin nhắn trên thẻ người chơi
+  const [bubbles, setBubbles] = useState<{ me?: { id: number; text: string }; opp?: { id: number; text: string } }>({});
+  const bubbleTimers = useRef<{ me?: ReturnType<typeof setTimeout>; opp?: ReturnType<typeof setTimeout> }>({});
+  const [chatText, setChatText] = useState("");
+  const lastChatAt = useRef(0);
+
+  function showBubble(side: "me" | "opp", text: string) {
+    const id = Date.now();
+
+    setBubbles((b) => ({ ...b, [side]: { id, text } }));
+    clearTimeout(bubbleTimers.current[side]);
+    bubbleTimers.current[side] = setTimeout(
+      () => setBubbles((b) => (b[side]?.id === id ? { ...b, [side]: undefined } : b)),
+      4000,
+    );
+  }
 
   // Danh sách quân đã bị bắt trong trận đấu trực tiếp.
   const [liveCapturedPieces, setLiveCapturedPieces] = useState<
@@ -267,6 +367,7 @@ export default function OnlineMatchOverlay({
             setFen(data.fen);
             fenRef.current = data.fen;
             setMatch(data);
+            setSanList([]);
             setLiveCapturedPieces([]);
             setClock(
               data.clock ?? {
@@ -286,6 +387,7 @@ export default function OnlineMatchOverlay({
             setOpponentDisconnected(false);
             setStatus("Đã ghép trận");
             setMessage("Đối thủ đã sẵn sàng!");
+            playSound("found");
           },
         );
 
@@ -316,13 +418,27 @@ export default function OnlineMatchOverlay({
           ]);
         }
 
+        // Âm thanh nước đi (tắt/bật trong Cài đặt → Âm thanh)
+        playSound(
+          /[+#]/.test(data.move.san) ? "check" : captured ? "capture" : "move",
+        );
+
         fenRef.current = data.fen;
         setFen(data.fen);
+        setSanList((list) => [...list, data.move.san]);
 
         setLastMove({
           from: data.move.from,
           to: data.move.to,
         });
+        // Hiệu ứng tại ô đến: chỉ khi ăn quân hoặc phong cấp (đi thường thì không)
+        if (captured || data.move.san.includes("=")) {
+          setFxEvent({
+            to: data.move.to,
+            kind: data.move.san.includes("=") ? "promote" : "capture",
+            id: Date.now(),
+          });
+        }
 
         setSelected(null);
         setLegalTargets([]);
@@ -340,6 +456,7 @@ export default function OnlineMatchOverlay({
         newSocket.on("match:draw-offered", (data: DrawOfferedData) => {
           setDrawOffer(data);
           setMessage("Đối thủ đang đề nghị hòa.");
+          playSound("alert");
         });
 
         // Đối thủ đã từ chối đề nghị hòa.
@@ -375,6 +492,7 @@ export default function OnlineMatchOverlay({
             }
 
             setFinished(data);
+            playSound("end");
             setDrawOffer(null);
             setShowResignConfirm(false);
             setDrawOfferSent(false);
@@ -388,6 +506,11 @@ export default function OnlineMatchOverlay({
             setMessage(getReasonText(data.reason));
           },
         );
+
+        // Biểu cảm / tin nhắn của đối thủ
+        newSocket.on("match:chat", (data: { kind: string; text: string }) => {
+          showBubble("opp", data.kind === "emote" ? EMOTE_ICON[data.text] ?? "" : data.text);
+        });
 
         newSocket.on(
           "match:opponent-disconnected",
@@ -419,8 +542,17 @@ export default function OnlineMatchOverlay({
           }
 
           const captured: CapturedPiece[] = [];
+          const sans: string[] = [];
 
           for (const item of data.moves) {
+            try {
+              const g = new Chess(item.beforeFen);
+              const mv = g.move({ from: item.from, to: item.to, promotion: "q" });
+              sans.push(mv.san);
+            } catch {
+              sans.push(`${item.from}-${item.to}`);
+            }
+
             const piece = getCapturedPiece(
               item.beforeFen,
               item.from,
@@ -443,6 +575,7 @@ export default function OnlineMatchOverlay({
           setFen(data.fen);
           fenRef.current = data.fen;
           setLiveCapturedPieces(captured);
+          setSanList(sans);
           setLastMove(data.lastMove);
           setClock(data.clock);
           setClockReceivedAt(Date.now());
@@ -936,524 +1069,576 @@ function confirmResign() {
       : [8, 7, 6, 5, 4, 3, 2, 1];
 
       
-  function renderCapturedInfo(color: "w" | "b") {
-  const lostPieces =
-    color === "w" ? whiteLostPieces : blackLostPieces;
-
-  const advantage =
-    color === "w"
-      ? whiteMaterialAdvantage
-      : blackMaterialAdvantage;
-
-  return (
-    <div className="mt-2 flex min-h-7 flex-wrap items-center gap-1">
-      {lostPieces.length > 0 ? (
-        lostPieces.map((piece, index) => (
-          <span
-            key={`${piece.color}-${piece.type}-${index}`}
-            title={`Đã mất ${PIECE_NAMES[piece.type]}`}
-            className="text-lg leading-none opacity-70"
-          >
-            {pieceSymbols[
-              `${piece.color}${piece.type.toUpperCase()}`
-            ]}
-          </span>
-        ))
-      ) : (
-        <span className="text-xs text-gray-500">
-          Chưa mất quân
-        </span>
-      )}
-
-      {advantage > 0 && (
-        <span className="ml-2 rounded-md bg-green-500/15 px-2 py-1 text-xs font-bold text-green-400">
-          +{advantage}
-        </span>
-      )}
-
-      {advantage < 0 && (
-        <span className="ml-2 rounded-md bg-red-500/15 px-2 py-1 text-xs font-bold text-red-400">
-          {advantage}
-        </span>
-      )}
-    </div>
-  );
-}
-
   // =========================================================
   // GIAO DIỆN
   // =========================================================
 
-  return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-black/80 p-3 backdrop-blur-sm">
-      <div className="relative my-auto w-full max-w-5xl rounded-2xl border border-yellow-500/30 bg-[#17171d] p-4 text-white shadow-2xl md:p-7">
+  // Đang tìm trận: màn hình chờ toàn màn hình.
+  if (!match && !reconnecting && !connectionLost) {
+    return (
+      <WaitingScreen
+        mode={mode}
+        status={status}
+        message={message}
+        socket={socket}
+        onCancel={leaveMatch}
+      />
+    );
+  }
 
-        {/* HEADER */}
+  // ---------- Dữ liệu cho giao diện trận đấu ----------
 
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <div>
-            <div className="text-xs font-bold tracking-[0.25em] text-yellow-500">
-              CHESSVERSE ONLINE
-            </div>
+  const meChar: "w" | "b" = myColor === "black" ? "b" : "w";
+  const oppChar: "w" | "b" = meChar === "w" ? "b" : "w";
 
-            <h2 className="mt-1 text-xl font-bold md:text-2xl">
-              {mode === "ranked"
-                ? "Đấu xếp hạng"
-                : "Đấu thường"}
-            </h2>
+  const myMs = myColor === "black" ? displayedClock.blackMs : displayedClock.whiteMs;
+  const oppMs = myColor === "black" ? displayedClock.whiteMs : displayedClock.blackMs;
+
+  const myClockOn = !finished && !!clock && clock.activeColor === myColor;
+  const oppClockOn = !finished && !!clock && clock.activeColor !== myColor;
+
+  const modeTitle = mode === "ranked" ? "Đấu Hạng" : "Đấu Thường";
+  const myTier = myProfile ? getTier(myProfile.elo) : null;
+
+  // Cặp nước đi theo lượt: [số lượt, nước Trắng, nước Đen]
+  const movePairs: { no: number; w?: string; b?: string }[] = [];
+
+  sanList.forEach((san, i) => {
+    const no = Math.floor(i / 2) + 1;
+
+    if (i % 2 === 0) movePairs.push({ no, w: san });
+    else movePairs[movePairs.length - 1].b = san;
+  });
+
+  // Nước đang xem (khi xem lại sau trận) hoặc nước mới nhất
+  const activePly = finished && selectedReviewPly !== null ? selectedReviewPly : sanList.length;
+
+  function sendEmote(id: string) {
+    if (!socket || Date.now() - lastChatAt.current < 1300) return;
+
+    lastChatAt.current = Date.now();
+    socket.emit("match:chat", { kind: "emote", text: id });
+    showBubble("me", EMOTE_ICON[id] ?? "");
+  }
+
+  function sendChat() {
+    const text = chatText.replace(/\s+/g, " ").trim().slice(0, 120);
+
+    if (!text || !socket || Date.now() - lastChatAt.current < 1300) return;
+
+    lastChatAt.current = Date.now();
+    socket.emit("match:chat", { kind: "text", text });
+    showBubble("me", text);
+    setChatText("");
+  }
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => null);
+    } else {
+      document.documentElement.requestFullscreen?.().catch(() => null);
+    }
+  }
+
+  // Quân mà một bên đã ăn được + lợi thế vật chất của bên đó
+  function renderTaken(color: "w" | "b") {
+    const taken = color === "w" ? blackLostPieces : whiteLostPieces;
+    const advantage = color === "w" ? whiteMaterialAdvantage : blackMaterialAdvantage;
+
+    // Gộp theo loại quân: các quân cùng loại xếp chồng lên nhau
+    const groups = (["p", "n", "b", "r", "q"] as const)
+      .map((type) => ({ type, list: taken.filter((piece) => piece.type === type) }))
+      .filter((g) => g.list.length > 0);
+
+    return (
+      <div className="mx-taken">
+        {groups.length === 0 ? (
+          <span className="mx-taken-empty">Chưa ăn quân</span>
+        ) : (
+          groups.map((g) => (
+            <span
+              key={g.type}
+              className="mx-taken-group"
+              title={`${PIECE_NAMES[g.type]} × ${g.list.length}`}
+            >
+              {g.list.map((piece, index) => (
+                <span key={index} className="mx-taken-piece">
+                  {renderPiece(`${piece.color}${piece.type.toUpperCase()}`, "small")}
+                </span>
+              ))}
+            </span>
+          ))
+        )}
+        {advantage > 0 && <b className="mx-adv">+{advantage}</b>}
+      </div>
+    );
+  }
+
+  function renderPlayer(side: "me" | "opp") {
+    const profile = side === "me" ? myProfile : opponentProfile;
+    const char = side === "me" ? meChar : oppChar;
+    const ms = side === "me" ? myMs : oppMs;
+    const on = side === "me" ? myClockOn : oppClockOn;
+    const name = profile?.displayName?.trim() || profile?.username || "Đang tải...";
+    const tier = profile ? (side === "me" && myTier ? myTier : getTier(profile.elo)) : null;
+    const bubble = bubbles[side];
+
+    return (
+      <section
+        className={`mx-player ${side}`}
+        style={{ backgroundImage: `url(${getCover(profile?.profileCover).src})` }}
+      >
+        <div className="mx-player-top">
+          <PlayerAvatar avatar={profile?.avatarId} frame={profile?.avatarFrame} name={name} className="mx-pa" />
+
+          <div className="mx-player-info">
+            <strong title={name}>
+              <Flag code={profile?.country} />{profile?.country ? " " : null}
+              {name}
+              {side === "me" && <em> (Bạn)</em>}
+            </strong>
+            <span className={`mx-side ${char}`}>{char === "w" ? "Quân Trắng" : "Quân Đen"}</span>
+
+            {tier && profile && (
+              <div className="mx-tier">
+                <TierBadge index={tier.index} text={false} className="mx-tb" />
+                <span>
+                  {tier.name}
+                  <small>{profile.elo.toLocaleString("vi-VN")} Elo</small>
+                </span>
+              </div>
+            )}
           </div>
 
-          <button
-            onClick={leaveMatch}
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-gray-300 transition hover:bg-white/10"
-          >
-            {match ? "Đóng trận" : "Hủy tìm trận"}
-          </button>
+          {bubble && (
+            <div key={bubble.id} className={`mx-bubble${bubble.text.length <= 2 ? " emo" : ""}`}>
+              {bubble.text}
+            </div>
+          )}
         </div>
 
-        {/* TRẠNG THÁI KẾT NỐI */}
-        {(reconnecting || connectionLost) && (
-          <ConnectionBanner
-            message={message}
-            connectionLost={connectionLost}
-            onClose={onClose}
-          />
-        )}
+        <div className={`mx-clock${on ? " on" : ""}${on && ms < 30000 ? " low" : ""}`}>
+          {/* Đồng hồ kim: kim giây quay khi đang tới lượt */}
+          <span className="mx-dial" aria-hidden="true">
+            <i className="mx-hand min" style={{ transform: `rotate(${Math.floor(ms / 60000) * 6}deg)` }} />
+            <i className="mx-hand sec" style={{ transform: `rotate(${(Math.ceil(ms / 1000) % 60) * 6}deg)` }} />
+          </span>
+          <span className="mx-time">{formatClock(ms)}</span>
+        </div>
 
-        {/* WAITING */}
+        {renderTaken(char)}
+      </section>
+    );
+  }
 
-        {!match && (
-          <WaitingScreen status={status} message={message} />
-        )}
+  // Ô của Vua đang bị chiếu (để đặt hiệu ứng Chiếu tướng / Chiếu hết)
+  const isMate = currentGame.isCheckmate();
 
-        {/* MATCH */}
+  // Ô Vua của người thắng (hiệu ứng Chiến thắng khi ván kết thúc)
+  const winnerColor =
+    finished?.winner && match ? (finished.winner === match.players.white ? "w" : "b") : null;
+  const victorySquare: string | null = winnerColor
+    ? (currentGame
+        .board()
+        .flat()
+        .find((cell) => cell?.type === "k" && cell.color === winnerColor)?.square ?? null)
+    : null;
+  const checkSquare: string | null = currentGame.inCheck()
+    ? (currentGame
+        .board()
+        .flat()
+        .find((cell) => cell?.type === "k" && cell.color === currentGame.turn())?.square ?? null)
+    : null;
 
-        {match && (
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+  return (
+    <div className={`mx-root${fx ? " fx" : ""}`}>
+      {/* ---------- THANH TRÊN ---------- */}
+      <header className="mx-top">
+        <div className="mx-brand">
+          <img src="/images/academy/logo.png" alt="" />
+          <span>
+            Chess
+            <br />
+            Verse
+          </span>
+        </div>
 
-            {/* CHESSBOARD */}
+        <div className="mx-title">
+          <div className="mx-title-main">
+            <span>{modeTitle}</span>
+            <i>◆</i>
+            <span>Solo 1 vs 1</span>
+          </div>
+          <div className="mx-title-sub">
+            {mode === "ranked" ? "Kết quả được tính vào Elo" : "Ván giao hữu · Không ảnh hưởng Elo"}
+          </div>
+        </div>
 
-            <div className="mx-auto w-full max-w-[620px]">
+        <div className="mx-top-actions">
+          <SettingsMenu />
 
-              
-            {/* OPPONENT */}
-            <div className="mb-3 flex items-start justify-between rounded-xl bg-[#24242c] p-3">
-              {/* THÔNG TIN ĐỐI THỦ */}
-              <div className="min-w-0 text-left">
-                <div className="text-xs text-gray-400">
-                  ĐỐI THỦ
-                </div>
+          <button
+            className="mx-icon-btn"
+            title="Đầu hàng"
+            aria-label="Đầu hàng"
+            disabled={!match || !!finished}
+            onClick={resign}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+            </svg>
+          </button>
 
-                <div className="font-semibold">
-                  {opponentProfile?.displayName?.trim() ||
-                    opponentProfile?.username ||
-                    "Đang tải thông tin..."}
-                </div>
+          <button
+            className="mx-icon-btn mx-view-btn"
+            title="Đổi kiểu bàn cờ 2D / 3D"
+            aria-label="Đổi kiểu bàn cờ 2D / 3D"
+            onClick={() => setBoardView(boardView === "3d" ? "2d" : "3d")}
+          >
+            {boardView === "3d" ? "2D" : "3D"}
+          </button>
 
-                <div className="mt-1 text-sm text-yellow-400">
-                  {opponentProfile
-                    ? `${opponentProfile.elo.toLocaleString("vi-VN")} Elo`
-                    : "--- Elo"}
-                </div>
+          <button className="mx-icon-btn" title="Toàn màn hình" aria-label="Toàn màn hình" onClick={toggleFullscreen}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+            </svg>
+          </button>
 
-                {renderCapturedInfo(myColor === "white" ? "b" : "w")}
+          <button className="mx-icon-btn" title={finished ? "Rời trận" : "Đóng"} aria-label="Rời trận" onClick={leaveMatch}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      {/* TRẠNG THÁI KẾT NỐI */}
+      {(reconnecting || connectionLost) && (
+        <div className="mx-conn">
+          <ConnectionBanner message={message} connectionLost={connectionLost} onClose={onClose} />
+        </div>
+      )}
+
+      {!match && (
+        <div className="mx-wait">
+          <h3>{status}</h3>
+          <p>{message}</p>
+        </div>
+      )}
+
+      {match && (
+        <div className="mx-body">
+          {/* ---------- CỘT TRÁI: BẠN ---------- */}
+          <aside className="mx-col left">
+            {renderPlayer("me")}
+
+            <section className="mx-panel mx-history">
+              <header>
+                <span>Lịch sử nước đi</span>
+                <b>{sanList.length > 0 ? `${Math.ceil(sanList.length / 2)} lượt` : ""}</b>
+              </header>
+
+              <div className="mx-moves" ref={historyRef}>
+                {movePairs.length === 0 && <p className="mx-muted">Chưa có nước đi nào.</p>}
+
+                {movePairs.map((pair) => {
+                  const wPly = pair.no * 2 - 1;
+                  const bPly = pair.no * 2;
+
+                  return (
+                    <div className="mx-move" key={pair.no}>
+                      <span className="mx-move-no">{pair.no}.</span>
+                      <button
+                        className={activePly === wPly ? "on" : ""}
+                        disabled={!finished}
+                        onClick={() => setSelectedReviewPly(wPly)}
+                      >
+                        {pair.w}
+                      </button>
+                      {pair.b ? (
+                        <button
+                          className={activePly === bPly ? "on" : ""}
+                          disabled={!finished}
+                          onClick={() => setSelectedReviewPly(bPly)}
+                        >
+                          {pair.b}
+                        </button>
+                      ) : (
+                        <span className="mx-move-wait">…</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <div className="mx-chat">
+              <div className="mx-emotes">
+                {EMOTES.map((e) => (
+                  <button key={e.id} title={e.label} aria-label={e.label} onClick={() => sendEmote(e.id)}>
+                    {e.icon}
+                  </button>
+                ))}
               </div>
 
-              {/* ĐỒNG HỒ ĐỐI THỦ Ở GÓC TRÊN BÊN PHẢI */}
-              <div className="ml-3 flex shrink-0 flex-col items-end gap-2">
-                <div
-                  className={[
-                    "rounded-lg px-3 py-1 font-mono text-xl font-bold tabular-nums",
-                    !finished &&
-                    clock?.activeColor ===
-                      (myColor === "white" ? "black" : "white")
-                      ? "bg-yellow-500 text-black"
-                      : "bg-black/30 text-white",
-                  ].join(" ")}
-                >
-                  {formatClock(
-                    myColor === "white"
-                      ? displayedClock.blackMs
-                      : displayedClock.whiteMs,
-                  )}
-                </div>
-
-                <div className="text-3xl">
-                  {myColor === "white" ? "♚" : "♔"}
-                </div>
-              </div>
+              <form
+                className="mx-input"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  sendChat();
+                }}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" className="mx-input-icon">
+                  <path d="M4 5h16v11H9l-5 4z" />
+                </svg>
+                <input
+                  value={chatText}
+                  maxLength={120}
+                  placeholder="Nhập tin nhắn..."
+                  onChange={(event) => setChatText(event.target.value)}
+                />
+                <button type="submit" aria-label="Gửi" disabled={!chatText.trim()}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 11l18-8-8 18-2-8z" />
+                  </svg>
+                </button>
+              </form>
             </div>
+          </aside>
 
-
-              {/* REVIEW POSITION INFO */}
+          {/* ---------- GIỮA: BÀN CỜ ---------- */}
+          <main className="mx-center">
+            <div className={`mx-turn${isMyTurn && !finished ? " mine" : ""}`}>
+              {finished
+                ? selectedReviewPly !== null
+                  ? selectedReviewPly === 0
+                    ? "Vị trí bắt đầu"
+                    : selectedAnalysisMove
+                      ? `Đang xem: ${getMoveTitle(selectedAnalysisMove)}`
+                      : "Đang xem lại ván cờ"
+                  : "Ván đấu đã kết thúc"
+                : opponentDisconnected
+                  ? "Đối thủ mất kết nối"
+                  : isMyTurn
+                    ? "Đến lượt bạn"
+                    : "Đang chờ đối thủ..."}
 
               {finished && selectedReviewPly !== null && (
-                <div className="mb-2 flex items-center justify-between rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-3 py-2">
-                  <span className="text-sm text-yellow-300">
-                    {selectedReviewPly === 0
-                      ? "Vị trí bắt đầu"
-                      : selectedAnalysisMove
-                        ? `Đang xem: ${getMoveTitle(selectedAnalysisMove)}`
-                        : "Đang xem lại ván cờ"}
-                  </span>
-
-                  <button
-                    onClick={() => setSelectedReviewPly(null)}
-                    className="text-xs text-yellow-400 hover:text-yellow-200"
-                  >
-                    Về cuối ván
-                  </button>
-                </div>
+                <button onClick={() => setSelectedReviewPly(null)}>Về cuối ván</button>
               )}
+            </div>
 
-              {/* BOARD */}
+            <div className={`mx-board-frame${boardView === "3d" ? " v3d" : ""}`}>
+              {/* Tọa độ nằm ngoài mép bàn */}
+              <div className="mx-ranks" aria-hidden="true">
+                {ranks.map((rank) => (
+                  <span key={rank}>{rank}</span>
+                ))}
+              </div>
+              <div className="mx-files" aria-hidden="true">
+                {files.map((file) => (
+                  <span key={file}>{file}</span>
+                ))}
+              </div>
 
-              <div
-                data-fen={displayFen}
-                className="grid aspect-square grid-cols-8 overflow-visible rounded-lg border-2 border-[#b99b57]"
-              >
+              <div className="mx-board" data-fen={displayFen}>
                 {ranks.map((rank) =>
                   files.map((file, fileIndex) => {
                     const square = `${file}${rank}` as Square;
                     const piece = currentGame.get(square);
-
-                    const isPromotionSquare =
-                      promotionChoice?.to === square;
-
-                    const pieceKey = piece
-                      ? `${piece.color}${piece.type.toUpperCase()}`
-                      : "";
-
-                    const isDark =
-                      (fileIndex + rank) % 2 === 1;
-
+                    const isPromotionSquare = promotionChoice?.to === square;
+                    const pieceKey = piece ? `${piece.color}${piece.type.toUpperCase()}` : "";
+                    const isDark = (fileIndex + rank) % 2 === 1;
                     const isSelected = selected === square;
                     const isLegal = legalTargets.includes(square);
-
-                    const isLastMove =
-                      reviewLastMove?.from === square ||
-                      reviewLastMove?.to === square;
+                    const isLastMove = reviewLastMove?.from === square || reviewLastMove?.to === square;
 
                     return (
                       <button
                         key={square}
                         onClick={() => handleSquareClick(square)}
-                        disabled={
-                          !isMyTurn ||
-                          !!finished
-                        }
+                        disabled={!isMyTurn || !!finished}
+                        style={{
+                          backgroundColor: isDark ? board.dark : board.light,
+                          ...(board.texture
+                            ? {
+                                backgroundImage: `url(${isDark ? board.texture.dark : board.texture.light})`,
+                                backgroundSize: "100% 100%",
+                              }
+                            : {}),
+                        }}
                         className={[
-                          "relative flex aspect-square items-center justify-center transition",
-                          isDark ? "bg-[#779556]" : "bg-[#eeeed2]",
-                          isSelected ? "bg-yellow-400" : "",
-                          isLastMove && !isSelected
-                            ? "after:absolute after:inset-0 after:bg-yellow-300/30"
-                            : "",
-                          "disabled:cursor-default",
+                          "mx-sq",
+                          isSelected ? "sel" : "",
+                          isLastMove ? (reviewLastMove?.to === square ? "last to" : "last from") : "",
+                          isLegal ? (piece ? "target capture" : "target") : "",
                         ].join(" ")}
                       >
                         {piece && (
-                          <span
-                            className={[
-                              "relative z-10 flex h-full w-full items-center justify-center text-[min(12vw,90px)] leading-none",
-                              piece.color === "w"
-                                ? "text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
-                                : "text-[#171717] drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)]",
-                            ].join(" ")}
-                          >
-                            {pieceSymbols[pieceKey]}
+                          <span className={`mx-piece ${piece.color}${pieceSkin ? " skin" : ""}`}>
+                            {renderPiece(pieceKey)}
                           </span>
                         )}
 
-                        {/* PROMOTION */}
+                        {isPromotionSquare && promotionChoice && myColor && (
+                          <div
+                            className={`mx-promo ${myColor === "white" ? "top" : "bottom"}`}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {(
+                              [
+                                { type: "q", name: "Hậu" },
+                                { type: "r", name: "Xe" },
+                                { type: "b", name: "Tượng" },
+                                { type: "n", name: "Mã" },
+                              ] as const
+                            ).map((item) => {
+                              const color = myColor === "white" ? "w" : "b";
 
-                        {isPromotionSquare &&
-                          promotionChoice &&
-                          myColor && (
-                            <div
-                              className={[
-                                "absolute z-50 grid w-full grid-cols-1 overflow-hidden rounded-lg",
-                                "bg-[#f0d9b5] shadow-[0_4px_18px_rgba(0,0,0,0.65)]",
-                                myColor === "white"
-                                  ? "top-0"
-                                  : "bottom-0",
-                              ].join(" ")}
-                              onClick={(event) =>
-                                event.stopPropagation()
-                              }
-                            >
-                              {(
-                                [
-                                  { type: "q", name: "Hậu" },
-                                  { type: "r", name: "Xe" },
-                                  { type: "b", name: "Tượng" },
-                                  { type: "n", name: "Mã" },
-                                ] as const
-                              ).map((item) => {
-                                const color =
-                                  myColor === "white" ? "w" : "b";
-
-                                return (
-                                  <div
-                                    key={item.type}
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(event) => {
+                              return (
+                                <div
+                                  key={item.type}
+                                  role="button"
+                                  tabIndex={0}
+                                  title={item.name}
+                                  className={`mx-promo-item ${color}`}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    sendMove(promotionChoice.from, promotionChoice.to, item.type);
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                      event.preventDefault();
                                       event.stopPropagation();
-
-                                      sendMove(
-                                        promotionChoice.from,
-                                        promotionChoice.to,
-                                        item.type,
-                                      );
-                                    }}
-                                    onKeyDown={(event) => {
-                                      if (
-                                        event.key === "Enter" ||
-                                        event.key === " "
-                                      ) {
-                                        event.preventDefault();
-                                        event.stopPropagation();
-
-                                        sendMove(
-                                          promotionChoice.from,
-                                          promotionChoice.to,
-                                          item.type,
-                                        );
-                                      }
-                                    }}
-                                    className="flex aspect-square w-full cursor-pointer items-center justify-center text-[min(10vw,58px)] leading-none text-[#171717] transition hover:bg-yellow-400"
-                                    title={item.name}
-                                  >
-                                    {
-                                      pieceSymbols[
-                                        color + item.type.toUpperCase()
-                                      ]
+                                      sendMove(promotionChoice.from, promotionChoice.to, item.type);
                                     }
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                        {isLegal && !piece && (
-                          <span className="absolute h-3 w-3 rounded-full bg-black/25 md:h-4 md:w-4" />
+                                  }}
+                                >
+                                  {renderPiece(color + item.type.toUpperCase())}
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
 
-                        {isLegal && piece && (
-                          <span className="absolute inset-0 rounded-full border-4 border-black/25" />
+                        {isLegal && !piece && (fx ? <img className="mx-fx legal" src={fx.legal} alt="" /> : <span className="mx-dot" />)}
+                        {isLegal && piece && <span className="mx-ring" />}
+
+                        {/* Hiệu ứng chuyển động của bộ quân (chạy trong ô) */}
+                        {fx && isSelected && (
+                          <>
+                            <img className="mx-fx sel" src={fx.selectTile} alt="" />
+                            <Sprite s={fx.sprites.select} kind="select" loop />
+                          </>
+                        )}
+                        {fx && fxEvent?.to === square && selectedReviewPly === null && (
+                          <Sprite key={fxEvent.id} s={fx.sprites[fxEvent.kind]} kind={fxEvent.kind} />
+                        )}
+                        {fx && checkSquare === square && !isMate && <Sprite s={fx.sprites.check} kind="check" loop />}
+                        {fx && victorySquare === square && <Sprite s={fx.sprites.victory} kind="victory" />}
+                        {isLastMove && reviewLastMove?.from === square && !piece && !isLegal && (
+                          <span className="mx-trail" />
                         )}
                       </button>
                     );
                   }),
                 )}
               </div>
-
-              {/* MY PROFILE */}
-              <div className="mt-3 flex items-start justify-between rounded-xl bg-[#24242c] p-3">
-                {/* THÔNG TIN CỦA BẠN */}
-                <div className="min-w-0 text-left">
-                  <div className="text-xs text-gray-400">
-                    BẠN
-                  </div>
-
-                  <div className="font-semibold">
-                    {myProfile?.displayName?.trim() ||
-                      myProfile?.username ||
-                      "Đang tải thông tin..."}
-                  </div>
-
-                  <div className="mt-1 text-sm text-yellow-400">
-                    {myProfile
-                      ? `${myProfile.elo.toLocaleString("vi-VN")} Elo`
-                      : "--- Elo"}
-
-                    {" · "}
-
-                    {myColor === "white"
-                      ? "Quân Trắng"
-                      : "Quân Đen"}
-                  </div>
-
-                  {renderCapturedInfo(myColor === "white" ? "w" : "b")}
-                </div>
-
-                {/* ĐỒNG HỒ Ở GÓC TRÊN BÊN PHẢI */}
-                <div className="ml-3 flex shrink-0 flex-col items-end gap-2">
-                  <div
-                    className={[
-                      "rounded-lg px-3 py-1 font-mono text-xl font-bold tabular-nums",
-                      !finished && clock?.activeColor === myColor
-                        ? "bg-yellow-500 text-black"
-                        : "bg-black/30 text-white",
-                    ].join(" ")}
-                  >
-                    {formatClock(
-                      myColor === "white"
-                        ? displayedClock.whiteMs
-                        : displayedClock.blackMs,
-                    )}
-                  </div>
-
-                  <div className="text-3xl">
-                    {myColor === "white" ? "♔" : "♚"}
-                  </div>
-                </div>
-              </div>
-
             </div>
+          </main>
 
-            {/* RIGHT PANEL */}
+          {/* ---------- CỘT PHẢI: ĐỐI THỦ + HÀNH ĐỘNG ---------- */}
+          <aside className="mx-col right">
+            {renderPlayer("opp")}
 
-            <div className="flex min-h-[400px] flex-col gap-4">
+            {finished ? (
+              <>
+                <div className="mx-actions">
+                  <button className="mx-act gold" onClick={() => setShowResultOverlay(true)}>
+                    <span>🏆</span> Xem kết quả
+                  </button>
+                  <button className="mx-act" onClick={leaveMatch}>
+                    <span>↩</span> Rời trận
+                  </button>
+                </div>
 
-              {/* AFTER FINISH */}
-
-              {finished ? (
-                <AnalysisPanel
-                  finished={finished}
-                  isWinner={isWinner}
-                  myAverageCpl={myAverageCpl}
-                  selectedAnalysisMove={selectedAnalysisMove}
-                  bestMoveSan={bestMoveSan}
-                  allAnalysisMoves={allAnalysisMoves}
-                  selectedReviewPly={selectedReviewPly}
-                  onSelectPly={setSelectedReviewPly}
-                />
-              ) : (
-                <>
-                  {/* STATUS */}
-
-                  <div className="rounded-xl bg-[#24242c] p-4">
-                    <div className="text-xs tracking-wider text-gray-400">
-                      TRẠNG THÁI TRẬN ĐẤU
-                    </div>
-
-                    <div className="mt-2 text-lg font-bold text-yellow-400">
-                      {opponentDisconnected
-                        ? "Đối thủ mất kết nối"
-                        : isMyTurn
-                          ? "Đến lượt bạn"
-                          : "Đang chờ đối thủ"}
-                    </div>
-
-                    <p className="mt-2 text-sm text-gray-400">
-                      {message}
-                    </p>
-                  </div>
-
-                  {/* TURN */}
-
-                  <div className="rounded-xl bg-[#24242c] p-4">
-                    <div className="text-xs tracking-wider text-gray-400">
-                      LƯỢT ĐI HIỆN TẠI
-                    </div>
-
-                    <div className="mt-2 text-2xl font-bold">
-                      {currentGame.turn() === "w"
-                        ? "Trắng"
-                        : "Đen"}
-                    </div>
-
-                    <p className="mt-1 text-xs text-gray-500">
-                      {isMyTurn
-                        ? "Bạn đang được đi."
-                        : "Đối thủ đang được đi."}
-                    </p>
-                  </div>
-
-                  {/* MATCH ID */}
-
-                  <div className="rounded-xl bg-[#24242c] p-4">
-                    <div className="text-xs tracking-wider text-gray-400">
-                      MÃ TRẬN ĐẤU
-                    </div>
-
-                    <div className="mt-2 break-all text-xs text-gray-300">
-                      {match.matchId}
+                <div className="mx-analysis">
+                  <AnalysisPanel
+                    finished={finished}
+                    isWinner={isWinner}
+                    myAverageCpl={myAverageCpl}
+                    selectedAnalysisMove={selectedAnalysisMove}
+                    bestMoveSan={bestMoveSan}
+                    allAnalysisMoves={allAnalysisMoves}
+                    selectedReviewPly={selectedReviewPly}
+                    onSelectPly={setSelectedReviewPly}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                {drawOffer && (
+                  <div className="mx-panel mx-offer">
+                    <p>Đối thủ đề nghị hòa.</p>
+                    <div>
+                      <button className="yes" onClick={() => respondToDraw(true)}>
+                        Đồng ý
+                      </button>
+                      <button className="no" onClick={() => respondToDraw(false)}>
+                        Từ chối
+                      </button>
                     </div>
                   </div>
+                )}
 
-                  {/* ĐỀ NGHỊ HÒA */}
+                <div className="mx-actions">
+                  <button className="mx-act danger" onClick={resign}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+                    </svg>
+                    Đầu hàng
+                  </button>
+
                   {!opponentDisconnected && !drawOffer && (
-                    <button
-                      onClick={offerDraw}
-                      disabled={drawOfferSent}
-                      className="w-full rounded-xl border border-yellow-500/50 py-3 font-semibold text-yellow-400 transition hover:bg-yellow-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {drawOfferSent
-                        ? "ĐANG CHỜ ĐỐI THỦ..."
-                        : "XIN HÒA"}
+                    <button className="mx-act" onClick={offerDraw} disabled={drawOfferSent}>
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M2 12l4-4 4 2 3-2 4 1 5 3M6 8l-3 7M18 9l3 6M9 14l2 2M12 13l2 2M14 12l2 2" />
+                      </svg>
+                      {drawOfferSent ? "Đang chờ đối thủ..." : "Xin hòa"}
                     </button>
                   )}
 
-                  {/* ĐỐI THỦ ĐỀ NGHỊ HÒA */}
-                  {drawOffer && (
-                    <div className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-4">
-                      <p className="text-sm font-semibold text-yellow-300">
-                        Đối thủ đang đề nghị hòa.
-                      </p>
-
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => respondToDraw(true)}
-                          className="rounded-lg bg-green-600 px-3 py-2 text-sm font-bold text-white hover:bg-green-500"
-                        >
-                          Đồng ý
-                        </button>
-
-                        <button
-                          onClick={() => respondToDraw(false)}
-                          className="rounded-lg bg-red-600 px-3 py-2 text-sm font-bold text-white hover:bg-red-500"
-                        >
-                          Từ chối
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* HÒA THEO LUẬT CỜ VUA */}
                   {canClaimDraw && (
-                    <button
-                      onClick={claimDraw}
-                      disabled={claimingDraw}
-                      className="w-full rounded-xl border border-blue-500/50 py-3 font-semibold text-blue-400 transition hover:bg-blue-500/10 disabled:opacity-50"
-                    >
-                      {claimingDraw
-                        ? "ĐANG KIỂM TRA..."
-                        : "YÊU CẦU HÒA THEO LUẬT"}
+                    <button className="mx-act blue" onClick={claimDraw} disabled={claimingDraw}>
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3v18M5 7h14M7 7l-3 7h6zM17 7l-3 7h6z" />
+                      </svg>
+                      {claimingDraw ? "Đang kiểm tra..." : "Hòa theo luật"}
                     </button>
                   )}
 
-                  {/* RESIGN */}
+                  <button className="mx-act" disabled title="Có sau khi ván đấu kết thúc">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M5 20V12M10 20V6M15 20v-9M20 20V4" />
+                    </svg>
+                    Phân tích
+                    <small>sau trận</small>
+                  </button>
+                </div>
 
-                  {(
-                    <button
-                      onClick={resign}
-                      className="w-full rounded-xl border border-red-500/50 py-3 font-semibold text-red-400 transition hover:bg-red-500/10"
-                    >
-                      ĐẦU HÀNG
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+                <p className="mx-message">{message}</p>
+              </>
+            )}
+          </aside>
+        </div>
+      )}
 
       {/* XÁC NHẬN ĐẦU HÀNG */}
       {showResignConfirm && !finished && (
-        <ResignConfirmDialog
-          onCancel={() => setShowResignConfirm(false)}
-          onConfirm={confirmResign}
-        />
+        <ResignConfirmDialog onCancel={() => setShowResignConfirm(false)} onConfirm={confirmResign} />
       )}
 
-      {/* =================================================== */}
-      {/* RESULT OVERLAY */}
-      {/* =================================================== */}
-
+      {/* KẾT QUẢ */}
       {finished && showResultOverlay && (
         <ResultOverlay
           finished={finished}
@@ -1464,7 +1649,6 @@ function confirmResign() {
           onLeave={leaveMatch}
         />
       )}
-
     </div>
   );
 }

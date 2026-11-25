@@ -1,51 +1,62 @@
-
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import styles from "./history.module.css";
+import { useRouter } from "next/navigation";
+import AcademyShell from "../components/AcademyShell";
+import PlayerAvatar from "../components/PlayerAvatar";
+import TierBadge from "../components/TierBadge";
+import { getTier } from "../lib/rank";
+import "./history.css";
 
 type MatchResult = "WIN" | "LOSS" | "DRAW";
 type MatchMode = "RANKED" | "CASUAL";
 
+type Player = {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarId: string | null;
+  avatarFrame: string | null;
+  elo: number;
+};
+
 type HistoryMatch = {
   id: string;
   mode: MatchMode;
-  result: string | null;
   myResult: MatchResult;
   reason: string | null;
   myColor: "WHITE" | "BLACK";
-  opponent: {
-    id: string;
-    username: string;
-    displayName: string;
-    avatarUrl: string | null;
-  };
+  opponent: Player;
   myEloBefore: number | null;
   myEloChange: number;
   myEloAfter: number | null;
   opponentEloBefore: number | null;
   opponentEloChange: number;
   opponentEloAfter: number | null;
+  durationSec: number | null;
+  moveCount: number;
   startedAt: string;
   finishedAt: string | null;
 };
 
 type HistoryResponse = {
-  message?: string;
   total: number;
+  page: number;
+  pages: number;
+  me: Player | null;
   matches: HistoryMatch[];
 };
 
-const resultLabels: Record<MatchResult, string> = {
-  WIN: "Chiến thắng",
-  LOSS: "Thất bại",
-  DRAW: "Hòa",
-};
+const PAGE_SIZE = 5;
+const IMG = "/images/academy/history";
 
-const reasonLabels: Record<string, string> = {
+const RESULT_TEXT: Record<MatchResult, string> = { WIN: "Thắng", LOSS: "Thua", DRAW: "Hòa" };
+const RESULT_KEY: Record<MatchResult, string> = { WIN: "win", LOSS: "loss", DRAW: "draw" };
+
+const REASON_TEXT: Record<string, string> = {
   CHECKMATE: "Chiếu hết",
-  RESIGN: "Đối thủ đầu hàng",
+  RESIGN: "Đầu hàng",
   DISCONNECT: "Mất kết nối",
   TIMEOUT: "Hết giờ",
   STALEMATE: "Hết nước đi",
@@ -56,342 +67,447 @@ const reasonLabels: Record<string, string> = {
   DRAW_AGREEMENT: "Hai bên đồng ý hòa",
 };
 
-function formatDate(value: string) {
+const FILTERS: { id: "ALL" | MatchMode | "TEAM"; label: string; icon: string; soon?: boolean }[] = [
+  { id: "ALL", label: "Tất cả", icon: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" },
+  {
+    id: "RANKED",
+    label: "Đấu Hạng",
+    icon: "M4 4l9 9M4 4v4M4 4h4M20 4l-9 9M20 4v4M20 4h-4M7 14l-3 3 3 3 3-3M17 14l3 3-3 3-3-3",
+  },
+  { id: "CASUAL", label: "Đấu Thường", icon: "M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" },
+  {
+    id: "TEAM",
+    label: "Đấu Đội",
+    icon: "M9 11a3 3 0 100-6 3 3 0 000 6zM17 11a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c3 0 6 1.8 6 5.5",
+    soon: true,
+  },
+];
+
+function duration(sec: number | null) {
+  if (sec === null) return "—";
+
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const mm = String(m).padStart(h ? 2 : 1, "0");
+
+  return `${h ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
+}
+
+function dateText(value: string | null) {
+  if (!value) return "—";
+
   return new Intl.DateTimeFormat("vi-VN", {
     timeZone: "Asia/Ho_Chi_Minh",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+  }).format(new Date(value));
+}
+
+function timeText(value: string | null) {
+  if (!value) return "";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
 }
 
-function formatElo(value: number | null) {
-  return value === null ? "—" : value.toLocaleString("en-US");
+function eloDelta(m: HistoryMatch) {
+  if (m.mode !== "RANKED") return "Giao hữu";
+  if (m.myEloChange > 0) return `+${m.myEloChange}`;
+  if (m.myEloChange < 0) return String(m.myEloChange);
+
+  return "±0";
+}
+
+function ModeIcon({ mode }: { mode: MatchMode }) {
+  return mode === "RANKED" ? (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 4l9 9M4 4v4M4 4h4M20 4l-9 9M20 4v4M20 4h-4M7 14l-3 3 3 3 3-3M17 14l3 3-3 3-3-3" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9 6.5v11l9-5.5z" />
+    </svg>
+  );
 }
 
 export default function HistoryPage() {
-  const [matches, setMatches] = useState<HistoryMatch[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [modeFilter, setModeFilter] = useState<
-    "ALL" | MatchMode
-  >("ALL");
-  const [resultFilter, setResultFilter] = useState<
-    "ALL" | MatchResult
-  >("ALL");
+  const router = useRouter();
+  const [data, setData] = useState<HistoryResponse | null>(null);
+  const [state, setState] = useState<"loading" | "ok" | "guest" | "error">("loading");
+  const [mode, setMode] = useState<"ALL" | MatchMode>("ALL");
+  const [page, setPage] = useState(1);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [toast, setToast] = useState("");
 
-  useEffect(() => {
-    let active = true;
+  const load = useCallback(async (nextPage: number, nextMode: "ALL" | MatchMode) => {
+    const qs = new URLSearchParams({ page: String(nextPage), size: String(PAGE_SIZE) });
+    if (nextMode !== "ALL") qs.set("mode", nextMode);
 
-    async function loadHistory() {
-      try {
-        setLoading(true);
-        setError("");
+    try {
+      const response = await fetch(`/api/online/history?${qs}`, { cache: "no-store" });
 
-        const response = await fetch("/api/online/history", {
-          method: "GET",
-          cache: "no-store",
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Không thể tải lịch sử đấu.",
-          );
-        }
-
-        if (active) {
-          const history = data as HistoryResponse;
-          setMatches(
-            Array.isArray(history.matches) ? history.matches : [],
-          );
-        }
-      } catch (err) {
-        if (active) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Đã xảy ra lỗi khi tải lịch sử.",
-          );
-        }
-      } finally {
-        if (active) setLoading(false);
+      if (response.status === 401) {
+        setState("guest");
+        return;
       }
+
+      if (!response.ok) throw new Error();
+
+      const json = (await response.json()) as HistoryResponse;
+
+      setData(json);
+      setPage(json.page ?? 1);
+      setSelectedId((current) =>
+        json.matches.some((m) => m.id === current) ? current : json.matches[0]?.id ?? null,
+      );
+      setState("ok");
+    } catch {
+      setState("error");
     }
-
-    loadHistory();
-
-    return () => {
-      active = false;
-    };
   }, []);
 
-  const stats = useMemo(() => {
-    const wins = matches.filter(
-      (match) => match.myResult === "WIN",
-    ).length;
+  useEffect(() => {
+    load(page, mode);
+  }, [load, page, mode]);
 
-    const losses = matches.filter(
-      (match) => match.myResult === "LOSS",
-    ).length;
+  function flash(text: string) {
+    setToast(text);
+    setTimeout(() => setToast(""), 2200);
+  }
 
-    const draws = matches.filter(
-      (match) => match.myResult === "DRAW",
-    ).length;
+  async function share(id: string) {
+    const url = `${window.location.origin}/history/${id}`;
 
-    const total = matches.length;
-
-    return {
-      total,
-      wins,
-      losses,
-      draws,
-      winRate: total > 0
-        ? Math.round((wins / total) * 100)
-        : 0,
-    };
-  }, [matches]);
-
-  const filteredMatches = useMemo(() => {
-    return matches.filter((match) => {
-      const matchMode = modeFilter === "ALL" ||
-        match.mode === modeFilter;
-
-      const matchResult = resultFilter === "ALL" ||
-        match.myResult === resultFilter;
-
-      return matchMode && matchResult;
-    });
-  }, [matches, modeFilter, resultFilter]);
-
-  const currentElo = matches[0]?.myEloAfter ?? null;
+    try {
+      await navigator.clipboard.writeText(url);
+      flash("Đã sao chép liên kết ván đấu.");
+    } catch {
+      flash(url);
+    }
+  }
 
   return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <div className={styles.eyebrow}>
-            CHESSVERSE / PLAYER
-          </div>
-          <h1>Lịch sử đấu</h1>
-          <p>
-            Theo dõi hành trình thi đấu và những thay đổi Elo
-            của bạn.
-          </p>
-        </div>
-
-        <Link href="/" className={styles.backButton}>
-          ← Dashboard
-        </Link>
-      </header>
-
-      {error && (
-        <div className={styles.error}>
-          {error}
-          {error.includes("đăng nhập") && (
-            <span> Vui lòng quay lại Dashboard và đăng nhập.</span>
-          )}
-        </div>
-      )}
-
-      <section className={styles.statsGrid}>
-        <article className={styles.statCard}>
-          <span>TỔNG SỐ TRẬN</span>
-          <strong>{loading ? "—" : stats.total}</strong>
-          <small>Trận đã hoàn thành</small>
-        </article>
-
-        <article className={styles.statCard}>
-          <span>CHIẾN THẮNG</span>
-          <strong className={styles.win}>
-            {loading ? "—" : stats.wins}
-          </strong>
-          <small>Trận thắng</small>
-        </article>
-
-        <article className={styles.statCard}>
-          <span>THẤT BẠI</span>
-          <strong className={styles.loss}>
-            {loading ? "—" : stats.losses}
-          </strong>
-          <small>Trận thua</small>
-        </article>
-
-        <article className={styles.statCard}>
-          <span>TỶ LỆ THẮNG</span>
-          <strong>
-            {loading ? "—" : `${stats.winRate}%`}
-          </strong>
-          <small>
-            {loading ? "Đang tải..." : `${stats.draws} trận hòa`}
-          </small>
-        </article>
-      </section>
-
-      <section className={styles.eloPanel}>
-        <div>
-          <span className={styles.eyebrow}>CURRENT RATING</span>
-          <h2>{loading ? "—" : formatElo(currentElo)}</h2>
-          <p>Elo gần nhất được ghi nhận trong lịch sử đấu</p>
-        </div>
-        <div className={styles.eloIcon}>♛</div>
-      </section>
-
-      <section className={styles.historyPanel}>
-        <div className={styles.panelHeading}>
-          <div>
-            <span className={styles.eyebrow}>MATCH RECORDS</span>
-            <h2>Các trận đấu gần đây</h2>
-          </div>
-          <span className={styles.matchCount}>
-            {loading ? "..." : `${filteredMatches.length} trận`}
-          </span>
-        </div>
-
-        <div className={styles.filters}>
-          <div className={styles.filterGroup}>
-            <span>Chế độ</span>
-            <select
-              value={modeFilter}
-              onChange={(event) =>
-                setModeFilter(event.target.value as
-                  "ALL" | MatchMode)
+    <AcademyShell active="Lịch sử đấu">
+      {(user) => {
+        // Avatar + khung của bạn: lấy từ tài khoản đang đăng nhập (luôn mới nhất)
+        const me = data?.me
+          ? {
+              ...data.me,
+              avatarId: user?.avatarId ?? data.me.avatarId,
+              avatarFrame: user?.avatarFrame ?? data.me.avatarFrame,
+            }
+          : user
+            ? {
+                id: "",
+                username: "",
+                displayName: user.displayName ?? "Bạn",
+                avatarId: user.avatarId ?? null,
+                avatarFrame: user.avatarFrame ?? null,
+                elo: 0,
               }
-            >
-              <option value="ALL">Tất cả</option>
-              <option value="RANKED">Đấu xếp hạng</option>
-              <option value="CASUAL">Đấu thường</option>
-            </select>
-          </div>
+            : null;
+        const matches = data?.matches ?? [];
+        const pages = data?.pages ?? 1;
+        const selected = matches.find((m) => m.id === selectedId) ?? null;
 
-          <div className={styles.filterGroup}>
-            <span>Kết quả</span>
-            <select
-              value={resultFilter}
-              onChange={(event) =>
-                setResultFilter(event.target.value as
-                  "ALL" | MatchResult)
-              }
-            >
-              <option value="ALL">Tất cả</option>
-              <option value="WIN">Chiến thắng</option>
-              <option value="LOSS">Thất bại</option>
-              <option value="DRAW">Hòa</option>
-            </select>
-          </div>
-        </div>
+        const myElo = (m: HistoryMatch) => m.myEloAfter ?? m.myEloBefore ?? me?.elo ?? 0;
+        const oppElo = (m: HistoryMatch) => m.opponentEloAfter ?? m.opponentEloBefore ?? m.opponent.elo;
 
-        {loading ? (
-          <div className={styles.empty}>
-            Đang tải lịch sử đấu...
-          </div>
-        ) : filteredMatches.length === 0 ? (
-          <div className={styles.empty}>
-            {matches.length === 0
-              ? "Bạn chưa có trận đấu nào được lưu."
-              : "Không tìm thấy trận đấu phù hợp với bộ lọc."}
-          </div>
-        ) : (
-          <div className={styles.matchList}>
-            {filteredMatches.map((match) => {
-              const resultClass =
-                match.myResult === "WIN"
-                  ? styles.winBadge
-                  : match.myResult === "LOSS"
-                    ? styles.lossBadge
-                    : styles.drawBadge;
+        const pageButtons = Array.from({ length: pages }, (_, i) => i + 1).filter(
+          (n) => pages <= 5 || Math.abs(n - page) <= 2 || (page <= 3 && n <= 5) || (page >= pages - 2 && n > pages - 5),
+        );
 
-              const eloChange = match.myEloChange;
-              const eloClass =
-                eloChange > 0
-                  ? styles.win
-                  : eloChange < 0
-                    ? styles.loss
-                    : "";
+        return (
+          <div className="hs-page">
+            <header className="hs-head">
+              <img src="/images/academy/practice/laurel-l.png" alt="" />
+              <h1>Lịch Sử Đấu</h1>
+              <img src="/images/academy/practice/laurel-r.png" alt="" />
+            </header>
 
-              return (
-                <article
-                  className={styles.matchRow}
-                  key={match.id}
+            <nav className="hs-filters">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  className={`${mode === f.id ? "on" : ""}${f.soon ? " soon" : ""}`}
+                  onClick={() => {
+                    if (f.soon) {
+                      flash("Đấu Đội 2 vs 2 sắp ra mắt.");
+                      return;
+                    }
+
+                    setMode(f.id as "ALL" | MatchMode);
+                    setPage(1);
+                  }}
                 >
-                  <div className={styles.opponent}>
-                    <div className={styles.avatar}>
-                      {match.opponent.displayName
-                        ?.charAt(0)
-                        .toUpperCase() || "?"}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d={f.icon} />
+                  </svg>
+                  {f.label}
+                  {f.soon && <small>Sắp có</small>}
+                </button>
+              ))}
+
+            </nav>
+
+            {toast && <div className="hs-toast">{toast}</div>}
+
+            {state === "loading" && <p className="hs-muted">Đang tải lịch sử đấu...</p>}
+
+            {state === "guest" && (
+              <div className="hs-empty">
+                <p>Bạn cần đăng nhập để xem lịch sử đấu.</p>
+                <button className="hs-gold" onClick={() => router.push("/")}>
+                  Về trang chủ để đăng nhập
+                </button>
+              </div>
+            )}
+
+            {state === "error" && (
+              <div className="hs-empty">
+                <p>Không tải được lịch sử đấu.</p>
+                <button className="hs-gold" onClick={() => load(page, mode)}>
+                  Thử lại
+                </button>
+              </div>
+            )}
+
+            {state === "ok" && matches.length === 0 && (
+              <div className="hs-empty">
+                <p>{mode === "ALL" ? "Bạn chưa có ván đấu nào." : "Chưa có ván nào ở chế độ này."}</p>
+                <button className="hs-gold" onClick={() => router.push("/practice")}>
+                  Vào Đấu luyện
+                </button>
+              </div>
+            )}
+
+            {state === "ok" && matches.length > 0 && (
+              <div className="hs-body">
+                {/* ---------- DANH SÁCH ---------- */}
+                <section className="hs-list">
+                  <div className="hs-rows">
+                    {matches.map((m) => {
+                      const key = RESULT_KEY[m.myResult];
+                      const mine = getTier(myElo(m));
+                      const theirs = getTier(oppElo(m));
+
+                      return (
+                        <div
+                          key={m.id}
+                          role="button"
+                          tabIndex={0}
+                          className={`hs-row ${key}${selectedId === m.id ? " on" : ""}`}
+                          onClick={() => setSelectedId(m.id)}
+                          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelectedId(m.id)}
+                        >
+                          <div className="hs-res">
+                            <img src={`${IMG}/ico-${key}.png`} alt="" />
+                            <div>
+                              <b>{RESULT_TEXT[m.myResult]}</b>
+                              <span>{eloDelta(m)}</span>
+                            </div>
+                          </div>
+
+                          <div className="hs-vs">
+                            <div className="hs-side">
+                              <PlayerAvatar
+                                avatar={me?.avatarId}
+                                frame={me?.avatarFrame}
+                                name={me?.displayName ?? "B"}
+                                className="hs-pa"
+                              />
+                              <TierBadge index={mine.index} text={false} className="hs-tb" />
+                            </div>
+
+                            <i>VS</i>
+
+                            <div className="hs-side">
+                              <PlayerAvatar
+                                avatar={m.opponent.avatarId}
+                                frame={m.opponent.avatarFrame}
+                                name={m.opponent.displayName}
+                                className="hs-pa"
+                              />
+                              <TierBadge index={theirs.index} text={false} className="hs-tb" />
+                            </div>
+                          </div>
+
+                          <div className="hs-meta">
+                            <span className="hs-opp" title={m.opponent.displayName}>
+                              {m.opponent.displayName}
+                            </span>
+                            <span>
+                              <ModeIcon mode={m.mode} />
+                              {m.mode === "RANKED" ? "Đấu Hạng" : "Đấu Thường"}
+                            </span>
+                            <span>
+                              <ClockIcon />
+                              {duration(m.durationSec)}
+                            </span>
+                          </div>
+
+                          <Link
+                            href={`/history/${m.id}`}
+                            className="hs-play"
+                            aria-label="Xem lại ván đấu"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <PlayIcon />
+                          </Link>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {pages > 1 && (
+                    <div className="hs-pager">
+                      <button className="hs-arrow" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Trang trước">
+                        ‹
+                      </button>
+                      <div className="hs-nums">
+                        {pageButtons.map((n) => (
+                          <button key={n} className={n === page ? "on" : ""} onClick={() => setPage(n)}>
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                      <button className="hs-arrow" disabled={page >= pages} onClick={() => setPage(page + 1)} aria-label="Trang sau">
+                        ›
+                      </button>
                     </div>
-                    <div>
-                      <strong>
-                        {match.opponent.displayName}
-                      </strong>
-                      <small>
-                        @{match.opponent.username}
-                      </small>
+                  )}
+                </section>
+
+                {/* ---------- CHI TIẾT ---------- */}
+                {selected && (
+                  <aside className="hs-detail">
+                    <div className={`hs-banner ${RESULT_KEY[selected.myResult]}`}>
+                      <img src={`${IMG}/res-${RESULT_KEY[selected.myResult]}.png`} alt="" />
+                      <b>{RESULT_TEXT[selected.myResult]}</b>
                     </div>
-                  </div>
 
-                  <div className={styles.matchInfo}>
-                    <span className={resultClass}>
-                      {resultLabels[match.myResult]}
-                    </span>
-                    <small>
-                      {match.mode === "RANKED"
-                        ? "Đấu xếp hạng"
-                        : "Đấu thường"}
-                      {" · "}
-                      {match.myColor === "WHITE"
-                        ? "Quân trắng"
-                        : "Quân đen"}
-                    </small>
-                  </div>
+                    <div className="hs-duel">
+                      <div>
+                        <PlayerAvatar
+                          avatar={me?.avatarId}
+                          frame={me?.avatarFrame}
+                          name={me?.displayName ?? "B"}
+                          className="hs-big-pa"
+                        />
+                        <strong title={me?.displayName}>{me?.displayName ?? "Bạn"}</strong>
+                        <span>{myElo(selected).toLocaleString("vi-VN")} Elo</span>
+                      </div>
 
-                  <div className={styles.eloChange}>
-                    <strong className={eloClass}>
-                      {eloChange > 0 ? "+" : ""}
-                      {eloChange}
-                    </strong>
-                    <small>
-                      {formatElo(match.myEloBefore)}
-                      {" → "}
-                      {formatElo(match.myEloAfter)}
-                    </small>
-                  </div>
-        
-          <div className={styles.matchDate}>
-            <div className={styles.matchDateInfo}>
-              <strong>
-                {match.finishedAt
-                  ? formatDate(match.finishedAt)
-                  : formatDate(match.startedAt)}
-              </strong>
+                      <i>VS</i>
 
-              <small>
-                {match.reason
-                  ? reasonLabels[match.reason] || match.reason
-                  : "Đã hoàn thành"}
-              </small>
-            </div>
+                      <div>
+                        <PlayerAvatar
+                          avatar={selected.opponent.avatarId}
+                          frame={selected.opponent.avatarFrame}
+                          name={selected.opponent.displayName}
+                          className="hs-big-pa"
+                        />
+                        <strong title={selected.opponent.displayName}>{selected.opponent.displayName}</strong>
+                        <span>{oppElo(selected).toLocaleString("vi-VN")} Elo</span>
+                      </div>
+                    </div>
 
-            <Link
-              href={`/history/${match.id}`}
-              className={styles.detailLink}
-            >
-              Xem trận
-            </Link>
+                    <ul className="hs-facts">
+                      <li>
+                        <ModeIcon mode={selected.mode} />
+                        Chế độ
+                        <b>{selected.mode === "RANKED" ? "Đấu Hạng" : "Đấu Thường"}</b>
+                      </li>
+                      <li>
+                        <ClockIcon />
+                        Thời gian
+                        <b>{duration(selected.durationSec)}</b>
+                      </li>
+                      <li>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <rect x="4" y="5" width="16" height="15" rx="2" />
+                          <path d="M4 10h16M8 3v4M16 3v4" />
+                        </svg>
+                        Ngày đấu
+                        <b>
+                          {dateText(selected.finishedAt ?? selected.startedAt)}
+                          <small> {timeText(selected.finishedAt ?? selected.startedAt)}</small>
+                        </b>
+                      </li>
+                      <li>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M6 20h12M8 20l1-5h6l1 5M9 15c-1-2-2-3-2-6a5 5 0 0110 0c0 3-1 4-2 6" />
+                        </svg>
+                        Kết thúc
+                        <b>
+                          {REASON_TEXT[selected.reason ?? ""] ?? "—"}
+                          <small> · {Math.ceil(selected.moveCount / 2)} lượt</small>
+                        </b>
+                      </li>
+                      <li>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M5 20V12M10 20V6M15 20v-9M20 20V4" />
+                        </svg>
+                        Biến động Elo
+                        <b
+                          className={
+                            selected.mode !== "RANKED"
+                              ? ""
+                              : selected.myEloChange > 0
+                                ? "up"
+                                : selected.myEloChange < 0
+                                  ? "down"
+                                  : ""
+                          }
+                        >
+                          {eloDelta(selected)}
+                        </b>
+                      </li>
+                    </ul>
+
+                    <div className="hs-detail-actions">
+                      <Link href={`/history/${selected.id}`} className="hs-replay">
+                        <PlayIcon />
+                        Xem Lại Ván Đấu
+                      </Link>
+                      <button className="hs-share" onClick={() => share(selected.id)} aria-label="Chia sẻ">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="18" cy="5.5" r="2.5" />
+                          <circle cx="6" cy="12" r="2.5" />
+                          <circle cx="18" cy="18.5" r="2.5" />
+                          <path d="M8.3 10.8l7.4-4M8.3 13.2l7.4 4" />
+                        </svg>
+                      </button>
+                    </div>
+                  </aside>
+                )}
+              </div>
+            )}
           </div>
-         </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <footer className={styles.footer}>
-        © 2026 CHESSVERSE · THE NEXT MOVE
-      </footer>
-    </main>
+        );
+      }}
+    </AcademyShell>
   );
 }

@@ -45,6 +45,30 @@ model User {
   passwordHash String   @map("password_hash")
   displayName  String   @map("display_name") @db.VarChar(50)
   avatarUrl    String?  @map("avatar_url")
+  avatarId     String?  @map("avatar_id") @db.VarChar(20)
+  avatarFrame  String?  @map("avatar_frame") @db.VarChar(20)
+  profileCover String?  @map("profile_cover") @db.VarChar(20)
+  country      String?  @db.VarChar(2) // mã quốc gia ISO, ví dụ "VN"
+  playerCode   String?  @unique @map("player_code") @db.VarChar(12)
+  clubMember   ClubMember?
+  coins        Int      @default(500)
+  gems         Int      @default(30)
+  boardTheme   String   @default("classic") @map("board_theme") @db.VarChar(20)
+  pieceSet     String   @default("set1") @map("piece_set") @db.VarChar(20)
+  items        UserItem[]
+  paymentOrders  PaymentOrder[]
+  gemTransactions GemTransaction[]
+  questClaims     QuestClaim[]
+  puzzleSolves    PuzzleSolve[]
+  loginDays       LoginDay[]
+  lessonProgress  LessonProgress[]
+
+  friends          Friendship[]    @relation("FriendOwner")
+  friendOf         Friendship[]    @relation("FriendTarget")
+  requestsSent     FriendRequest[] @relation("RequestFrom")
+  requestsReceived FriendRequest[] @relation("RequestTo")
+  blocks           UserBlock[]     @relation("Blocker")
+  blockedBy        UserBlock[]     @relation("Blocked")
   elo          Int      @default(500)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -53,6 +77,96 @@ model User {
   blackMatches Match[]  @relation("BlackMatches")
 
   @@map("users")
+}
+
+// Bạn bè: lưu 2 chiều (A→B và B→A) khi đã kết bạn
+model Friendship {
+  userId    String   @map("user_id")
+  friendId  String   @map("friend_id")
+  favorite  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation("FriendOwner", fields: [userId], references: [id], onDelete: Cascade)
+  friend    User     @relation("FriendTarget", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@id([userId, friendId])
+  @@map("friendships")
+}
+
+// Lời mời kết bạn đang chờ
+model FriendRequest {
+  id        String   @id @default(cuid())
+  fromId    String   @map("from_id")
+  toId      String   @map("to_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  from      User     @relation("RequestFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to        User     @relation("RequestTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId])
+  @@index([toId])
+  @@map("friend_requests")
+}
+
+// Danh sách chặn
+model UserBlock {
+  userId    String   @map("user_id")
+  blockedId String   @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation("Blocker", fields: [userId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([userId, blockedId])
+  @@map("user_blocks")
+}
+
+// Vật phẩm đã mua ở Cửa hàng
+model UserItem {
+  userId    String   @map("user_id")
+  itemId    String   @map("item_id") @db.VarChar(40)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, itemId])
+  @@map("user_items")
+}
+
+enum ClubRole {
+  LEADER
+  OFFICER
+  MEMBER
+}
+
+// Câu lạc bộ (Clan)
+model Club {
+  id           String       @id @default(cuid())
+  name         String       @unique @db.VarChar(30)
+  description  String       @default("") @db.VarChar(200)
+  announcement String       @default("") @db.VarChar(300)
+  banner       String       @default("b0") @db.VarChar(10)
+  region       String       @default("VN") @db.VarChar(2) // khu vực: mã quốc gia ISO
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  members      ClubMember[]
+
+  @@map("clubs")
+}
+
+// Mỗi người chỉ ở một câu lạc bộ
+model ClubMember {
+  userId   String   @id @map("user_id")
+  clubId   String   @map("club_id")
+  role     ClubRole @default(MEMBER)
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([clubId])
+  @@map("club_members")
 }
 
 model Match {
@@ -96,4 +210,116 @@ model Match {
   @@index([blackUserId, createdAt])
   @@index([mode, status])
   @@map("matches")
+}
+
+// ===================== NẠP KIM CƯƠNG =====================
+
+enum PaymentProvider {
+  VNPAY
+  MOMO
+  MOCK
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+// Đơn nạp: tạo khi người chơi bấm Thanh toán, chuyển PAID khi cổng xác nhận
+model PaymentOrder {
+  id            String          @id @default(cuid())
+  userId        String          @map("user_id")
+  packageId     String          @map("package_id") @db.VarChar(20)
+  amount        Int             // số tiền VND
+  gems          Int             // tổng kim cương nhận (gồm thưởng)
+  provider      PaymentProvider
+  status        PaymentStatus   @default(PENDING)
+  providerTxnId String?         @map("provider_txn_id") @db.VarChar(64)
+  providerData  Json?           @map("provider_data")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  paidAt        DateTime?       @map("paid_at")
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("payment_orders")
+}
+
+// Sổ cái: mọi lần kim cương thay đổi (nạp, mua vật phẩm, thưởng)
+model GemTransaction {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  delta     Int
+  balance   Int      // số dư sau giao dịch
+  reason    String   @db.VarChar(20) // TOPUP | PURCHASE | REWARD | ADMIN
+  refId     String?  @map("ref_id") @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("gem_transactions")
+}
+
+
+// ===================== THỬ THÁCH =====================
+
+// Phần thưởng đã nhận (nhiệm vụ, cấp thẻ thử thách, rương bản đồ, chuỗi đăng nhập)
+// period: "d:2026-11-25" (ngày), "w:2026-11-23" (tuần, ngày thứ Hai), "all", "ev:xmas2026"...
+model QuestClaim {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  questId   String   @map("quest_id") @db.VarChar(40)
+  period    String   @db.VarChar(24)
+  exp       Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId, period])
+  @@index([userId, createdAt])
+  @@map("quest_claims")
+}
+
+// Bài trên Bản đồ thử thách (chiếu hết 1 nước)
+model PuzzleSolve {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  puzzleId  String    @map("puzzle_id") @db.VarChar(20)
+  attempts  Int       @default(0)
+  stars     Int       @default(0)
+  solvedAt  DateTime? @map("solved_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, puzzleId])
+  @@index([userId, solvedAt])
+  @@map("puzzle_solves")
+}
+
+// Mỗi ngày người chơi vào game (tính chuỗi đăng nhập)
+model LoginDay {
+  userId String @map("user_id")
+  day    String @db.VarChar(10) // "2026-11-25" theo giờ Việt Nam
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@map("login_days")
+}
+
+// Bài học đã hoàn thành trong Khóa học
+model LessonProgress {
+  userId   String   @map("user_id")
+  courseId String   @map("course_id") @db.VarChar(30)
+  lessonId String   @map("lesson_id") @db.VarChar(30)
+  doneAt   DateTime @default(now()) @map("done_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, courseId, lessonId])
+  @@index([userId, doneAt])
+  @@map("lesson_progress")
 }

@@ -19,6 +19,10 @@ export interface PlayerProfile {
   username: string;
   displayName: string;
   elo: number;
+  avatarId?: string | null;
+  avatarFrame?: string | null;
+  profileCover?: string | null;
+  country?: string | null;
 }
 
 export interface MatchFoundData {

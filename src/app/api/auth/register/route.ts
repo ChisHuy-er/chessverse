@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           "x-forwarded-for": request.headers.get("x-forwarded-for") ?? "",
+          // Gợi ý quốc gia: header CDN (khi chạy thật) + múi giờ/ngôn ngữ trình duyệt
+          "x-geo-country": request.headers.get("cf-ipcountry") ?? request.headers.get("x-vercel-ip-country") ?? "",
+          "x-client-tz": request.headers.get("x-client-tz") ?? "",
+          "x-client-locale": request.headers.get("x-client-locale") ?? "",
         },
         body: JSON.stringify(body),
         cache: "no-store",

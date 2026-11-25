@@ -1,12 +1,12 @@
 
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 
 const BACKEND_URL =
   process.env.BACKEND_API_URL || "http://localhost:3000";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   await connection();
 
   try {
@@ -21,7 +21,7 @@ export async function GET() {
     }
 
     const backendResponse = await fetch(
-      `${BACKEND_URL}/online/history`,
+      `${BACKEND_URL}/online/history${request.nextUrl.search}`,
       {
         method: "GET",
         headers: {

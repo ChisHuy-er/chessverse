@@ -1,0 +1,936 @@
+/* =====================================================
+   XEM LẠI VÁN ĐẤU (/history/[id])
+   Phong cách gọn, tối, giống trang Game Review của chess.com
+===================================================== */
+
+.rv-page {
+  min-height: 100vh;
+  padding: 18px 24px 28px;
+  color: #e8e8ec;
+  font-family: system-ui, "Segoe UI", Arial, sans-serif;
+  background: #16171d;
+}
+
+.rv-page button {
+  font-family: inherit;
+}
+
+.rv-msg {
+  margin: 60px auto;
+  color: #b9bac4;
+  text-align: center;
+}
+
+.rv-muted {
+  margin: 6px 0;
+  color: #9a9ba6;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* ---------- Đầu trang ---------- */
+
+.rv-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+  margin-bottom: 14px;
+}
+
+.rv-top h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.rv-top p {
+  margin: 0;
+  color: #9a9ba6;
+  font-size: 14px;
+}
+
+.rv-back {
+  padding: 6px 12px;
+  border: 1px solid #34353f;
+  border-radius: 8px;
+  font-size: 14px;
+  text-decoration: none;
+  color: #d6d7de;
+  background: #22232b;
+}
+
+.rv-back:hover {
+  background: #2b2c35;
+}
+
+/* ---------- Bố cục ---------- */
+
+/* Đầu trang và nội dung chung một khung, canh giữa */
+.rv-wrap {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.rv-layout {
+  display: grid;
+  grid-template-columns: 290px auto 330px;
+  justify-content: center;
+  gap: 20px;
+  align-items: start;
+}
+
+.rv-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rv-info {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rv-info li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid #2a2b33;
+  color: #9a9ba6;
+  font-size: 14px;
+}
+
+.rv-info li:last-child {
+  border-bottom: 0;
+}
+
+.rv-info b {
+  font-weight: 600;
+  text-align: right;
+  color: #e8e8ec;
+}
+
+.rv-board-col {
+  --size: min(calc(100vh - 290px), calc(100vw - 760px), 680px);
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Dải tên người chơi */
+.rv-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 2px 4px;
+}
+
+.rv-strip .pa.rv-pa {
+  width: 52px;
+  flex: none;
+  font-size: 8px;
+}
+
+.rv-strip div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.rv-strip b {
+  font-size: 15px;
+}
+
+.rv-strip span {
+  color: #9a9ba6;
+  font-size: 13px;
+}
+
+.rv-strip em {
+  font-style: normal;
+}
+
+.rv-strip em.up {
+  color: #81b64c;
+}
+
+.rv-strip em.down {
+  color: #e06c5c;
+}
+
+.rv-win {
+  margin-left: auto;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  color: #1b2a12;
+  background: #81b64c;
+}
+
+/* ---------- Bàn cờ + thanh đánh giá ---------- */
+
+.rv-board-row {
+  display: flex;
+  gap: 8px;
+}
+
+.rv-evalbar {
+  position: relative;
+  width: 26px;
+  height: var(--size);
+  overflow: hidden;
+  border-radius: 4px;
+  background: #403d39;
+}
+
+.rv-eval-fill {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: #f1f1f1;
+  transition: height .35s ease;
+}
+
+.rv-eval-fill.flipped {
+  top: 0;
+  bottom: auto;
+}
+
+.rv-eval-num {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.rv-eval-num.w {
+  bottom: 4px;
+  color: #403d39;
+}
+
+.rv-eval-num.b {
+  top: 4px;
+  color: #f1f1f1;
+}
+
+.rv-eval-num.w.flipped {
+  top: 4px;
+  bottom: auto;
+}
+
+.rv-eval-num.b.flipped {
+  top: auto;
+  bottom: 4px;
+}
+
+.rv-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  width: var(--size);
+  height: var(--size);
+  overflow: hidden;
+  border-radius: 4px;
+  container-type: inline-size;
+}
+
+.rv-sq {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.rv-hl {
+  position: absolute;
+  inset: 0;
+  opacity: .5;
+}
+
+.rv-coord {
+  position: absolute;
+  z-index: 1;
+  font-size: max(10px, 1.6cqw);
+  font-weight: 700;
+  color: rgba(0, 0, 0, .55);
+}
+
+.rv-coord.on-dark {
+  color: rgba(255, 255, 255, .8);
+}
+
+.rv-coord.r {
+  top: 3%;
+  left: 4%;
+}
+
+.rv-coord.f {
+  right: 5%;
+  bottom: 2%;
+}
+
+.rv-piece {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 9.5cqw;
+  line-height: 1;
+}
+
+.rv-piece img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+}
+
+.rv-piece.w {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+}
+
+.rv-piece.b {
+  color: #222;
+}
+
+/* Biểu tượng phân loại ở góc ô đến */
+.rv-badge {
+  position: absolute;
+  top: -6%;
+  right: -6%;
+  z-index: 4;
+}
+
+.rv-arrows {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Biểu tượng phân loại dùng chung */
+.rv-cls {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .45);
+}
+
+/* ---------- Điều khiển ---------- */
+
+.rv-controls {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.rv-controls button {
+  min-width: 46px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #d6d7de;
+  background: #2a2b33;
+  cursor: pointer;
+}
+
+.rv-controls button:hover {
+  background: #353640;
+}
+
+.rv-controls button.main {
+  min-width: 70px;
+  color: #fff;
+  background: #81b64c;
+}
+
+.rv-controls button.main:hover {
+  background: #8fc45a;
+}
+
+.rv-controls button.on {
+  color: #81b64c;
+}
+
+.rv-sep {
+  width: 10px;
+}
+
+/* ---------- Cột phải ---------- */
+
+.rv-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rv-card {
+  padding: 14px 16px;
+  border: 1px solid #2c2d36;
+  border-radius: 10px;
+  background: #1f2028;
+}
+
+.rv-card h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Độ chính xác */
+.rv-acc {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.rv-acc > span {
+  padding-bottom: 10px;
+  color: #9a9ba6;
+  font-size: 13px;
+}
+
+.rv-acc div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rv-acc small {
+  overflow: hidden;
+  color: #b9bac4;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rv-acc b {
+  padding: 8px 0;
+  border-radius: 8px;
+  font-size: 24px;
+}
+
+.rv-acc b.w {
+  color: #222;
+  background: #f1f1f1;
+}
+
+.rv-acc b.b {
+  color: #f1f1f1;
+  background: #403d39;
+}
+
+/* Bảng đếm phân loại */
+.rv-counts {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rv-counts td {
+  padding: 4px 2px;
+}
+
+.rv-counts td.n {
+  width: 40px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.rv-counts td.l {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Nước đang xem */
+.rv-now-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rv-now-head p {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+}
+
+.rv-eval-chip {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #222;
+  background: #e9e9ee;
+}
+
+.rv-best {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  color: #b9bac4;
+  font-size: 14px;
+}
+
+.rv-best b {
+  color: #81b64c;
+}
+
+.rv-best button {
+  margin-left: auto;
+  padding: 3px 8px;
+  border: 1px solid #3a3b45;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #d6d7de;
+  background: none;
+  cursor: pointer;
+}
+
+/* Danh sách nước đi */
+.rv-moves-card {
+  padding: 8px;
+}
+
+.rv-moves {
+  max-height: min(520px, calc(100vh - 330px));
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.rv-move-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 1fr;
+  align-items: center;
+  font-size: 14px;
+}
+
+.rv-move-row:nth-child(odd) {
+  background: #23242c;
+}
+
+.rv-move-row .no {
+  padding-left: 6px;
+  color: #8a8b96;
+}
+
+.rv-move-row button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  color: #e8e8ec;
+  background: none;
+  cursor: pointer;
+}
+
+.rv-move-row button:hover {
+  background: #30313a;
+}
+
+.rv-move-row button.on {
+  background: #3b4a2c;
+}
+
+/* Biểu đồ */
+.rv-graph-card {
+  margin-top: 4px;
+  padding: 8px;
+}
+
+.rv-graph {
+  display: block;
+  width: 100%;
+  height: 90px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.rv-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rv-actions button {
+  padding: 8px 14px;
+  border: 1px solid #34353f;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #d6d7de;
+  background: #22232b;
+  cursor: pointer;
+}
+
+/* ---------- Màn hình hẹp ---------- */
+
+@media (max-width: 1050px) {
+  .rv-layout {
+    grid-template-columns: auto 320px;
+  }
+
+  .rv-board-col {
+    --size: min(calc(100vh - 290px), calc(100vw - 460px), 680px);
+  }
+
+  .rv-left {
+    grid-column: 1 / -1;
+    order: 3;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 880px) {
+  .rv-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .rv-left {
+    grid-template-columns: 1fr;
+  }
+
+  .rv-board-col {
+    --size: min(calc(100vw - 80px), 640px);
+
+    align-items: center;
+  }
+}
+
+/* =====================================================
+   CHỈNH SỬA: nền học viện, tiêu đề giữa, tọa độ ngoài bàn,
+   bàn cờ to hơn, chế độ 3D
+===================================================== */
+
+.rv-page {
+  background:
+    linear-gradient(180deg, rgba(8, 12, 40, .72), rgba(8, 10, 30, .9) 55%, rgba(8, 10, 30, .96)),
+    #0b1030 url(/images/academy/bg-scene.jpg) center top / cover no-repeat fixed;
+}
+
+.rv-card {
+  border-color: rgba(120, 150, 230, .22);
+  background: rgba(16, 20, 48, .86);
+  backdrop-filter: blur(4px);
+}
+
+.rv-move-row:nth-child(odd) {
+  background: rgba(255, 255, 255, .035);
+}
+
+/* Tiêu đề canh giữa, nút quay lại bên trái */
+.rv-top {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 56px;
+  margin-bottom: 10px;
+}
+
+.rv-top .rv-back {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  background: rgba(16, 20, 48, .86);
+}
+
+.rv-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rv-title img {
+  height: 44px;
+}
+
+.rv-title h1 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(180deg, #fff6d8, #f3cf78 55%, #c8922f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .7));
+}
+
+/* Bàn cờ to hơn */
+.rv-board-col {
+  --size: min(calc(100vh - 310px), calc(100vw - 740px), 760px);
+}
+
+.rv-layout {
+  grid-template-columns: 280px auto 320px;
+}
+
+/* Khung bàn cờ: tọa độ nằm ngoài mép */
+.rv-frame {
+  position: relative;
+  padding: 0 0 22px 20px;
+}
+
+.rv-frame .rv-board {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .55);
+}
+
+.rv-ranks,
+.rv-files {
+  position: absolute;
+  display: grid;
+  color: #c9cde6;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.rv-ranks {
+  top: 0;
+  bottom: 22px;
+  left: 0;
+  width: 20px;
+  grid-template-rows: repeat(8, 1fr);
+  align-items: center;
+}
+
+.rv-files {
+  right: 0;
+  bottom: 0;
+  left: 20px;
+  height: 22px;
+  grid-template-columns: repeat(8, 1fr);
+  justify-items: center;
+  align-items: center;
+}
+
+.rv-evalbar {
+  height: var(--size);
+}
+
+/* Biểu đồ ở góc phải dưới */
+.rv-side .rv-graph-card {
+  margin-top: 0;
+}
+
+.rv-moves {
+  max-height: min(420px, calc(100vh - 470px));
+}
+
+.rv-view {
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+
+/* ---------- Chế độ 3D: bàn nghiêng, quân đứng thẳng ---------- */
+
+.rv-frame.v3d {
+  transform: perspective(1400px) rotateX(30deg);
+  transform-origin: 50% 70%;
+  transform-style: preserve-3d;
+}
+
+.rv-frame.v3d .rv-board {
+  overflow: visible;
+  transform-style: preserve-3d;
+}
+
+.rv-frame.v3d .rv-sq {
+  transform-style: preserve-3d;
+}
+
+.rv-frame.v3d .rv-piece {
+  transform: rotateX(-30deg) scale(1.12);
+  transform-origin: 50% 88%;
+}
+
+.rv-frame.v3d .rv-badge {
+  transform: rotateX(-30deg);
+}
+
+@media (max-width: 1050px) {
+  .rv-board-col {
+    --size: min(calc(100vh - 310px), calc(100vw - 440px), 760px);
+  }
+}
+
+@media (max-width: 880px) {
+  .rv-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .rv-board-col {
+    --size: min(calc(100vw - 100px), 640px);
+  }
+
+  .rv-top .rv-back {
+    position: static;
+    transform: none;
+  }
+
+  .rv-top {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* =====================================================
+   CHỈNH: cột trái/phải rộng hơn để chữ không xuống dòng,
+   3D rõ hơn
+===================================================== */
+
+.rv-layout {
+  grid-template-columns: 320px auto 330px;
+}
+
+.rv-board-col {
+  --size: min(calc(100vh - 310px), calc(100vw - 790px), 760px);
+}
+
+.rv-counts td.l {
+  white-space: nowrap;
+}
+
+.rv-acc small {
+  font-size: 12px;
+}
+
+.rv-frame.v3d {
+  transform: perspective(1000px) rotateX(38deg);
+  transform-origin: 50% 78%;
+}
+
+.rv-frame.v3d .rv-board {
+  box-shadow: 0 50px 60px rgba(0, 0, 0, .7);
+}
+
+/* Độ dày mặt trước của bàn */
+.rv-frame.v3d .rv-board::before {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 26px;
+  content: "";
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(180deg, #5b4a34, #2a2116);
+  transform: rotateX(-90deg);
+  transform-origin: 50% 0;
+}
+
+.rv-frame.v3d .rv-board::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  background: linear-gradient(180deg, rgba(0, 0, 0, .35), rgba(0, 0, 0, 0) 45%, rgba(255, 255, 255, .07));
+  pointer-events: none;
+}
+
+.rv-frame.v3d .rv-piece {
+  transform: rotateX(-38deg) scale(1.28);
+  transform-origin: 50% 86%;
+  filter: drop-shadow(0 9px 5px rgba(0, 0, 0, .55));
+}
+
+.rv-frame.v3d .rv-badge {
+  transform: rotateX(-38deg);
+}
+
+@media (max-width: 1050px) {
+  .rv-layout {
+    grid-template-columns: auto 330px;
+  }
+
+  .rv-board-col {
+    --size: min(calc(100vh - 310px), calc(100vw - 450px), 760px);
+  }
+}
+
+@media (max-width: 880px) {
+  .rv-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .rv-board-col {
+    --size: min(calc(100vw - 100px), 640px);
+  }
+}
+
+.rv-frame.v3d {
+  transform-origin: 50% 100%;
+  margin-bottom: 30px;
+}
+
+/* 3D kiểu ảnh mẫu: nghiêng vừa phải, quân cao */
+.rv-frame.v3d {
+  transform: perspective(1700px) rotateX(24deg);
+}
+
+.rv-frame.v3d .rv-piece {
+  transform: rotateX(-24deg) scale(1.45);
+  transform-origin: 50% 92%;
+}
+
+.rv-frame.v3d .rv-badge {
+  transform: rotateX(-24deg);
+}
+
+.rv-frame.v3d .rv-board::after {
+  background: linear-gradient(180deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, 0) 40%, rgba(255, 255, 255, .06));
+}
+
+/* Màn hình vừa (hoặc phóng to trình duyệt): giữ 3 cột, thu hẹp cột hai bên */
+@media (min-width: 1051px) and (max-width: 1400px) {
+  .rv-layout {
+    grid-template-columns: 260px auto 280px;
+    gap: 14px;
+  }
+
+  .rv-board-col {
+    --size: min(calc(100vh - 310px), calc(100vw - 660px), 760px);
+  }
+
+  .rv-card {
+    padding: 12px;
+  }
+
+  .rv-counts {
+    font-size: 13px;
+  }
+}

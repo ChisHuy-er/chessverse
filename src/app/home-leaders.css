@@ -1,0 +1,109 @@
+/* Trang chủ → Bảng xếp hạng: top 3 cùng kiểu trang Bảng xếp hạng */
+
+.hl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hl-row {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 40px 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 4px 14px 4px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(242, 196, 92, .35);
+  border-radius: 12px;
+  font: inherit;
+  text-align: left;
+  color: #eef0fb;
+  background: rgba(10, 14, 44, .9);
+  cursor: pointer;
+  transition: border-color .15s ease, transform .12s ease;
+}
+
+/* Ảnh nền hồ sơ mờ dần sang phải để chữ dễ đọc */
+.hl-row::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(6, 10, 34, .3) 0%, rgba(6, 10, 34, .6) 40%, rgba(6, 10, 34, .9) 75%),
+    var(--cover) center 40% / cover no-repeat;
+}
+
+.hl-row:hover {
+  border-color: rgba(242, 196, 92, .8);
+  transform: translateX(2px);
+}
+
+.hl-row.r1 {
+  border-color: rgba(255, 210, 100, .75);
+  box-shadow: 0 0 14px rgba(255, 200, 80, .25);
+}
+
+.hl-row.me {
+  box-shadow: inset 0 0 0 1px rgba(110, 190, 255, .8);
+}
+
+.hl-shield {
+  width: 40px;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .6));
+}
+
+.hl-row .pa.hl-pa {
+  width: 52px;
+  font-size: 8px;
+}
+
+.hl-row strong {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .9);
+}
+
+.hl-elo {
+  color: #ffe3a0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Bảng xếp hạng nằm ở cột phải: gọn lại */
+.ac-col-side .ac-board .hl-list {
+  gap: 6px;
+}
+
+.ac-col-side .hl-row {
+  grid-template-columns: 30px 40px minmax(0, 1fr) auto;
+  gap: 8px;
+  min-height: 46px;
+  padding: 3px 10px 3px 6px;
+}
+
+.ac-col-side .hl-shield {
+  width: 30px;
+}
+
+.ac-col-side .hl-row .pa.hl-pa {
+  width: 40px;
+  font-size: 7px;
+}
+
+.ac-col-side .hl-row strong,
+.ac-col-side .hl-elo {
+  font-size: 13px;
+}
+
+/* Hàng dưới cột chính chỉ còn Thống kê: trải hết chiều ngang */
+.ac-grid .ac-bottom {
+  grid-template-columns: minmax(0, 1fr);
+}

@@ -1,5 +1,6 @@
 import { Prisma, MatchMode, MatchResult, MatchReason } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { COIN_REWARD } from './shop.catalog';
 import { StockfishService } from './stockfish.service';
 import { OnModuleInit } from '@nestjs/common';
 
@@ -86,7 +87,14 @@ interface PlayerProfile {
   username: string;
   displayName: string;
   elo: number;
+  avatarId?: string | null;
+  avatarFrame?: string | null;
+  profileCover?: string | null;
+  country?: string | null;
 }
+
+// Biểu cảm nhanh trong trận (chỉ cho phép các mã này)
+const MATCH_EMOTES = new Set(['smile', 'like', 'clap', 'target']);
 
 interface OnlineMatch {
   id: string;
@@ -151,8 +159,8 @@ function getClockSnapshot(match: OnlineMatch) {
 
   @WebSocketGateway({
     cors: {
-      // Khi triển khai thật, đổi thành địa chỉ web của bạn.
-      origin: ['http://localhost:3001'],
+      // Địa chỉ trang web được phép kết nối (khi đưa lên mạng đặt FRONTEND_URL, có thể nhiều địa chỉ cách nhau bằng dấu phẩy)
+      origin: (process.env.FRONTEND_URL || 'http://localhost:3001').split(',').map((s) => s.trim().replace(/\/$/, '')),
       credentials: true,
     },
   })
@@ -497,6 +505,10 @@ function getClockSnapshot(match: OnlineMatch) {
             username: true,
             displayName: true,
             elo: true,
+            avatarId: true,
+            avatarFrame: true,
+            profileCover: true,
+            country: true,
           },
         }),
 
@@ -507,6 +519,10 @@ function getClockSnapshot(match: OnlineMatch) {
             username: true,
             displayName: true,
             elo: true,
+            avatarId: true,
+            avatarFrame: true,
+            profileCover: true,
+            country: true,
           },
         }),
       ]);
@@ -646,6 +662,43 @@ function getClockSnapshot(match: OnlineMatch) {
         message: 'Không thể tạo trận đấu. Vui lòng thử lại.',
       });
     }
+  }
+
+  // =========================================================
+  // 3b. THỐNG KÊ SẢNH CHỜ (màn hình tìm trận hiển thị)
+  // =========================================================
+
+  // Người chơi đang ở trong một ván (dùng cho trang Bạn bè).
+  isUserInMatch(userId: string) {
+    return this.hasActiveMatch(userId);
+  }
+
+  // Người chơi đang kết nối khu thi đấu online (dùng cho trang Câu lạc bộ).
+  isUserOnline(userId: string) {
+    if (!this.server) return false;
+
+    for (const socket of this.server.sockets.sockets.values()) {
+      if (socket.data.userId === userId) return true;
+    }
+
+    return false;
+  }
+
+  @SubscribeMessage('lobby:stats')
+  lobbyStats() {
+    const online = new Set<string>();
+
+    for (const socket of this.server.sockets.sockets.values()) {
+      const userId = socket.data.userId as string | undefined;
+
+      if (userId) online.add(userId);
+    }
+
+    return {
+      online: online.size,
+      searching:
+        this.waitingPlayers.ranked.length + this.waitingPlayers.casual.length,
+    };
   }
 
   // =========================================================
@@ -1110,6 +1163,37 @@ function getClockSnapshot(match: OnlineMatch) {
 // 9. ĐỀ NGHỊ HÒA VÀ PHẢN HỒI ĐỀ NGHỊ HÒA
 // =========================================================
 
+  // Biểu cảm / tin nhắn ngắn gửi cho đối thủ trong cùng trận
+  @SubscribeMessage('match:chat')
+  matchChat(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { kind?: string; text?: string },
+  ) {
+    const userId = client.data.userId as string | undefined;
+    const matchId = this.socketMatches.get(client.id);
+    const match = matchId ? this.matches.get(matchId) : undefined;
+
+    if (!userId || !match || (userId !== match.white && userId !== match.black)) {
+      return;
+    }
+
+    // Chống spam: tối đa 1 tin mỗi 1,2 giây
+    const now = Date.now();
+    if (now - ((client.data.lastChatAt as number) ?? 0) < 1200) return;
+    client.data.lastChatAt = now;
+
+    if (data?.kind === 'emote') {
+      if (!data.text || !MATCH_EMOTES.has(data.text)) return;
+      client.to(match.roomId).emit('match:chat', { kind: 'emote', text: data.text });
+      return;
+    }
+
+    const text = String(data?.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (!text) return;
+
+    client.to(match.roomId).emit('match:chat', { kind: 'text', text });
+  }
+
   @SubscribeMessage('match:offer-draw')
   offerDraw(@ConnectedSocket() client: Socket) {
     const userId = client.data.userId as string | undefined;
@@ -1433,6 +1517,25 @@ function getClockSnapshot(match: OnlineMatch) {
               await tx.user.update({
                 where: { id: match.black },
                 data: { elo: { increment: blackDelta } },
+              });
+            }
+
+            // Thưởng xu (dùng ở Cửa hàng) cho mỗi ván đủ dài, cả xếp hạng lẫn đấu thường.
+            if (match.moves.length >= MIN_RANKED_PLIES) {
+              const coinsFor = (userId: string) =>
+                outcome.result === 'win' && outcome.winner
+                  ? outcome.winner === userId
+                    ? COIN_REWARD.win
+                    : COIN_REWARD.loss
+                  : COIN_REWARD.draw;
+
+              await tx.user.update({
+                where: { id: match.white },
+                data: { coins: { increment: coinsFor(match.white) } },
+              });
+              await tx.user.update({
+                where: { id: match.black },
+                data: { coins: { increment: coinsFor(match.black) } },
               });
             }
 

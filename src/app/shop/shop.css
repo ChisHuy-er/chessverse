@@ -1,0 +1,1653 @@
+/* =====================================================
+   CỬA HÀNG (/shop)
+===================================================== */
+
+.sh-page {
+  --sh-gold: #f2c45c;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 10px;
+  color: #eef0fb;
+}
+
+.sh-notice {
+  margin: 0;
+}
+
+/* ---------- Tiêu đề + ví ---------- */
+
+.sh-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sh-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sh-laurel {
+  height: 54px;
+}
+
+.sh-cart {
+  width: 44px;
+  height: 44px;
+  fill: none;
+  stroke: #f3cf78;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .6));
+}
+
+.sh-title h1 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 1.05;
+  background: linear-gradient(180deg, #fff6d8, #f3cf78 50%, #c8922f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .75));
+}
+
+.sh-title p {
+  margin: 2px 0 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-size: 15px;
+  color: #e3e6f6;
+  text-shadow: 0 1px 4px #000;
+}
+
+.sh-wallet {
+  display: flex;
+  gap: 10px;
+}
+
+.sh-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 6px 0 8px;
+  border: 1.5px solid rgba(110, 160, 255, .6);
+  border-radius: 99px;
+  background: linear-gradient(180deg, #16307a, #0b1748);
+  box-shadow: inset 0 0 10px rgba(80, 150, 255, .2);
+}
+
+.sh-pill img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.sh-pill b {
+  min-width: 70px;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sh-pill button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffd56b;
+  background: rgba(255, 255, 255, .06);
+}
+
+/* ---------- Tab ---------- */
+
+.sh-tabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sh-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 50px;
+  padding: 0 8px;
+  border: 1.5px solid rgba(110, 160, 255, .55);
+  border-radius: 99px;
+  cursor: pointer;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #eef0fb;
+  background: linear-gradient(180deg, #16307a, #0b1748);
+}
+
+.sh-tabs svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sh-tabs button:hover {
+  filter: brightness(1.15);
+}
+
+.sh-tabs button.on {
+  border-color: #ffe7a6;
+  color: #2b1a02;
+  background: linear-gradient(180deg, #ffe9a8, #f2c45c 45%, #c98d24);
+  box-shadow: 0 0 14px rgba(242, 196, 92, .45);
+}
+
+.sh-tabs button.soon {
+  opacity: .7;
+}
+
+/* ---------- Thân trang ---------- */
+
+.sh-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: start;
+}
+
+.sh-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sh-hero {
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border: 1.5px solid rgba(231, 189, 95, .7);
+  border-radius: 16px;
+  text-align: center;
+  background:
+    radial-gradient(40% 70% at 50% 50%, rgba(6, 12, 42, .55), transparent 75%),
+    #0a1238 url(/images/academy/shop/hero.jpg) center / cover no-repeat;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .35);
+}
+
+.sh-hero h2 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-weight: 800;
+  font-size: clamp(30px, 3.4vw, 46px);
+  background: linear-gradient(180deg, #fff6d8, #f3cf78 50%, #c8922f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .8));
+}
+
+.sh-hero p {
+  margin: 4px 0 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-size: 16px;
+  color: #fff6de;
+  text-shadow: 0 1px 6px #000;
+}
+
+.sh-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sh-filters > button {
+  height: 40px;
+  padding: 0 20px;
+  border: 1px solid rgba(110, 160, 255, .45);
+  border-radius: 99px;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #eef0fb;
+  background: rgba(15, 30, 80, .85);
+}
+
+.sh-filters > button.on {
+  border-color: #ffe7a6;
+  color: #2b1a02;
+  background: linear-gradient(180deg, #ffe9a8, #f2c45c 45%, #c98d24);
+}
+
+.sh-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(110, 160, 255, .45);
+  border-radius: 99px;
+  color: #ffd56b;
+  background: rgba(15, 30, 80, .85);
+}
+
+.sh-sort select {
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #eef0fb;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sh-sort option {
+  color: #111;
+}
+
+/* ---------- Thẻ vật phẩm ---------- */
+
+.sh-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sh-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 1.5px solid rgba(231, 189, 95, .55);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: center;
+  color: #eef0fb;
+  background: linear-gradient(180deg, #121f58, #0a1440);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .35);
+  animation: sh-in .35s ease both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.sh-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 220, 140, .9);
+}
+
+.sh-card.on {
+  border-color: #ffe7a6;
+  box-shadow: 0 0 0 2px rgba(242, 196, 92, .5), 0 0 22px rgba(242, 196, 92, .35);
+}
+
+.sh-card-name {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 8px 18px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(180deg, rgba(6, 12, 42, .9), transparent);
+  text-shadow: 0 1px 4px #000;
+}
+
+.sh-card-art {
+  aspect-ratio: 226 / 140;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 60%, #1d3388, #0a1440 70%);
+}
+
+.sh-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sh-card.soon .sh-art {
+  filter: saturate(.8) brightness(.85);
+}
+
+.sh-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 46px;
+  padding: 6px 10px;
+  border-top: 1px solid rgba(231, 189, 95, .3);
+}
+
+.sh-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.sh-price img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.sh-chip {
+  padding: 5px 16px;
+  border-radius: 99px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #2b1a02;
+  background: linear-gradient(180deg, #ffe9a8, #f2c45c 45%, #c98d24);
+}
+
+.sh-chip.soon {
+  color: #c8cde6;
+  background: rgba(255, 255, 255, .1);
+}
+
+.sh-owned {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  font-weight: 700;
+}
+
+.sh-owned img {
+  width: 22px;
+}
+
+.sh-board {
+  display: grid;
+  width: 62%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 3px solid #b99b57;
+  border-radius: 6px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .5);
+}
+
+.sh-frame-preview {
+  height: 92%;
+  display: grid;
+  place-items: center;
+}
+
+.sh-frame-preview .pa {
+  height: 100%;
+  font-size: 9px;
+}
+
+.sh-cover-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 14px;
+  background: center / cover no-repeat;
+}
+
+.sh-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.sh-pager button {
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid rgba(231, 189, 95, .7);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 24px;
+  color: #ffd56b;
+  background: #0b1748;
+}
+
+.sh-pager button:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+.sh-pager span {
+  min-width: 120px;
+  padding: 10px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 700;
+  background: #0b1748;
+}
+
+/* ---------- Khung chi tiết bên phải ---------- */
+
+.sh-detail {
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 16px 18px;
+  border: 1.5px solid rgba(231, 189, 95, .75);
+  border-radius: 18px;
+  background:
+    radial-gradient(70% 40% at 50% 25%, rgba(140, 80, 255, .25), transparent 70%),
+    linear-gradient(180deg, #121f58, #0a1440);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .45);
+}
+
+.sh-detail h3 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 26px;
+  text-align: center;
+  color: #ffe3a0;
+}
+
+.sh-tag {
+  padding: 4px 18px;
+  border: 1px solid rgba(200, 160, 255, .7);
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 700;
+  background: linear-gradient(180deg, #7b3fe0, #5523b0);
+}
+
+.sh-detail-art {
+  width: 100%;
+  aspect-ratio: 387 / 236;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.sh-detail-art.board .sh-board {
+  width: 64%;
+}
+
+.sh-detail-art.frame .sh-frame-preview {
+  height: 100%;
+}
+
+.sh-detail-art .sh-cover-preview .pa {
+  height: 80%;
+  font-size: 10px;
+}
+
+.sh-label {
+  align-self: flex-start;
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffe3a0;
+}
+
+.sh-pieces,
+.sh-fx {
+  display: grid;
+  width: 100%;
+  gap: 6px;
+}
+
+.sh-pieces {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.sh-fx {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.sh-pieces span,
+.sh-fx span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  color: #dfe3f7;
+}
+
+.sh-pieces img {
+  width: 100%;
+  max-width: 46px;
+}
+
+.sh-fx img {
+  width: 100%;
+  border: 1px solid rgba(200, 160, 255, .5);
+  border-radius: 8px;
+}
+
+.sh-desc {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  text-align: center;
+  color: #c6cbe6;
+}
+
+.sh-detail-price {
+  margin-top: 6px;
+}
+
+.sh-detail-price .sh-price {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 32px;
+}
+
+.sh-detail-price .sh-price img {
+  width: 36px;
+  height: 36px;
+}
+
+.sh-free {
+  font-size: 22px;
+  color: #7dff9a;
+}
+
+.sh-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.sh-actions .sh-buy,
+.sh-confirm .sh-buy {
+  flex: 1;
+  width: auto;
+}
+
+.sh-buy {
+  flex: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 54px;
+  border: 1.5px solid #ffe7a6;
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 21px;
+  font-weight: 800;
+  color: #2b1a02;
+  background: linear-gradient(180deg, #ffe9a8, #f2c45c 45%, #c98d24);
+  box-shadow: 0 0 18px rgba(242, 196, 92, .4);
+}
+
+.sh-buy svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sh-buy:disabled {
+  cursor: default;
+  opacity: .55;
+  box-shadow: none;
+}
+
+.sh-buy.small {
+  height: 42px;
+  font-size: 17px;
+}
+
+.sh-gift {
+  width: 64px;
+  height: 54px;
+  border: 1.5px solid rgba(110, 160, 255, .7);
+  border-radius: 16px;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(180deg, #1d3a8f, #0c1a52);
+}
+
+.sh-gift svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.sh-confirm {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid rgba(231, 189, 95, .5);
+  border-radius: 14px;
+  text-align: center;
+  background: rgba(224, 182, 90, .08);
+}
+
+.sh-confirm p {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.sh-confirm div {
+  display: flex;
+  gap: 8px;
+}
+
+.sh-ghost {
+  flex: 1;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #dfe3f7;
+  background: transparent;
+}
+
+@keyframes sh-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (max-width: 1350px) {
+  .sh-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sh-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sh-body {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+@media (max-width: 980px) {
+  .sh-body {
+    grid-template-columns: 1fr;
+  }
+
+  .sh-detail {
+    position: static;
+  }
+
+  .sh-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Bộ quân cờ ---------- */
+
+.sh-card-art.piece {
+  aspect-ratio: 1 / 1.05;
+}
+
+.sh-card-art.piece .sh-art {
+  object-position: center 60%;
+}
+
+.sh-detail-art.piece {
+  aspect-ratio: 1 / 1.05;
+  max-height: 320px;
+}
+
+.sh-detail-art.piece .sh-art {
+  object-position: center 55%;
+}
+
+.sh-pieces.real span {
+  padding: 2px 0 0;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 70%, rgba(255, 255, 255, .14), transparent 70%);
+}
+
+.sh-pieces.real img {
+  max-width: 52px;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .6));
+}
+
+.sh-pieces.real.dark span {
+  background: radial-gradient(circle at 50% 70%, rgba(255, 120, 120, .14), transparent 70%);
+}
+
+.sh-bonus {
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 8px 10px;
+  border: 1px dashed rgba(242, 196, 92, .6);
+  border-radius: 10px;
+  font-size: 13px;
+  text-align: center;
+  color: #ffe3a0;
+  background: rgba(242, 196, 92, .08);
+}
+
+.sh-board span {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.sh-board.with-pieces img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .5));
+}
+
+.sh-board {
+  grid-auto-rows: 1fr;
+}
+
+/* ---------- Hiệu ứng đặc biệt ---------- */
+
+.sh-fx-preview {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  background:
+    radial-gradient(circle at 50% 60%, rgba(150, 70, 255, .35), transparent 65%),
+    linear-gradient(180deg, #160b33, #0a0620);
+}
+
+.sh-fx-preview img {
+  width: 72%;
+  max-height: 88%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(170, 90, 255, .6));
+  animation: sh-fx-float 2.6s ease-in-out infinite;
+}
+
+.sh-detail-art.effect .sh-fx-preview {
+  min-height: 220px;
+  border-radius: 12px;
+}
+
+@keyframes sh-fx-float {
+  50% {
+    transform: translateY(-4px) scale(1.03);
+    filter: drop-shadow(0 0 18px rgba(190, 110, 255, .85));
+  }
+}
+
+.sh-fx-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+.sh-fx-list button {
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  font-size: 12px;
+  color: #dcd6f5;
+  background: none;
+  cursor: pointer;
+}
+
+.sh-fx-list span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 78px;
+  border: 1px solid rgba(170, 110, 255, .6);
+  border-radius: 10px;
+  background: radial-gradient(circle, rgba(130, 60, 230, .4), #0d0726 75%);
+  transition: box-shadow .15s ease;
+}
+
+.sh-fx-list button:hover span {
+  box-shadow: 0 0 14px rgba(170, 90, 255, .7);
+}
+
+.sh-fx-list img {
+  width: 78%;
+  max-height: 86%;
+  object-fit: contain;
+}
+
+/* Hiệu ứng chuyển động: chạy lặp các khung hình */
+.sh-sprite {
+  display: block;
+  width: 70%;
+  max-height: 86%;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: calc(var(--n) * 100%) 100%;
+  animation: sh-sprite-play 1.3s steps(var(--n), jump-none) infinite;
+}
+
+.sh-fx-list .sh-sprite {
+  width: 78%;
+}
+
+@keyframes sh-sprite-play {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 100% 0;
+  }
+}
+
+/* =====================================================
+   CHỈNH: ví nhỏ gọn bên phải, tab nằm chung hàng "Tất cả",
+   khung chi tiết dạng trang trượt
+===================================================== */
+
+.sh-head {
+  flex-wrap: nowrap;
+}
+
+.sh-wallet {
+  flex: none;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.sh-pill {
+  gap: 6px;
+  height: 36px;
+  padding: 0 4px 0 6px;
+}
+
+.sh-pill img {
+  width: 22px;
+  height: 22px;
+}
+
+.sh-pill b {
+  min-width: 48px;
+  font-size: 15px;
+}
+
+.sh-pill button {
+  width: 26px;
+  height: 26px;
+  font-size: 18px;
+}
+
+/* Tab danh mục: viên nhỏ, nằm đầu hàng bộ lọc */
+.sh-filters {
+  align-items: center;
+  row-gap: 8px;
+}
+
+.sh-filters .sh-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sh-filters .sh-tabs button {
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13.5px;
+}
+
+.sh-filters .sh-tabs svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sh-filters > button {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13.5px;
+}
+
+.sh-sort {
+  height: 36px;
+}
+
+.sh-sep {
+  width: 1px;
+  height: 24px;
+  margin: 0 2px;
+  background: rgba(255, 255, 255, .18);
+}
+
+/* Khung chi tiết: trang trượt */
+.sh-slider {
+  width: 100%;
+  overflow: hidden;
+}
+
+.sh-slides {
+  display: flex;
+  transition: transform .5s ease;
+}
+
+.sh-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+.sh-pane {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  aspect-ratio: 387 / 236;
+  padding: 4px 2px;
+}
+
+.sh-pane .sh-label {
+  margin: 0;
+}
+
+.sh-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sh-dots button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, .3);
+  transition: width .2s ease, background .2s ease;
+}
+
+.sh-dots button.on {
+  width: 22px;
+  background: #f2c45c;
+}
+
+/* Màn hình vừa: giữ bố cục, chỉ thu nhỏ */
+@media (max-width: 1350px) {
+  .sh-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .sh-body {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .sh-title h1 {
+    font-size: 32px;
+  }
+
+  .sh-title p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 1250px) {
+  .sh-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Hàng bộ lọc: các mục (Quân Cờ, Bàn Cờ…), "Tất cả" và "Phổ biến" cùng một cỡ */
+.sh-filters .sh-tabs button,
+.sh-filters > button,
+.sh-sort {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.sh-filters .sh-tabs svg {
+  width: 15px;
+  height: 15px;
+}
+
+.sh-sort select {
+  font-size: 13px;
+}
+
+/* Hàng bộ lọc luôn nằm trên MỘT hàng: các nút tự co nhỏ theo bề rộng */
+.sh-filters {
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sh-filters .sh-tabs {
+  flex-wrap: nowrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.sh-filters .sh-tabs button,
+.sh-filters > button,
+.sh-sort {
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 32px;
+  padding: 0 clamp(7px, .7vw, 12px);
+  font-size: clamp(11.5px, .8vw, 13px);
+}
+
+.sh-filters .sh-tabs button {
+  gap: 5px;
+}
+
+.sh-filters .sh-tabs svg {
+  width: 14px;
+  height: 14px;
+}
+
+.sh-sort {
+  flex: none;
+  gap: 4px;
+}
+
+.sh-sort select {
+  font-size: clamp(11.5px, .8vw, 13px);
+}
+
+.sh-sep {
+  flex: none;
+  height: 20px;
+}
+
+/* Hẹp hơn: ẩn icon để chữ vẫn đủ chỗ */
+@media (max-width: 1450px) {
+  .sh-filters .sh-tabs svg {
+    display: none;
+  }
+}
+
+/* Không bóp méo chữ: nút giữ nguyên bề rộng chữ, thiếu chỗ thì hàng mục cuộn ngang */
+.sh-filters .sh-tabs button,
+.sh-filters > button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.sh-filters .sh-tabs {
+  flex: 0 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sh-filters .sh-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* =====================================================
+   THEO MẪU: số kiểu chữ có chân, ví & nút Mua, thẻ nhỏ gọn
+===================================================== */
+
+.sh-page {
+  --num: var(--font-num), "Times New Roman", Georgia, serif;
+}
+
+/* ---------- Ví kim cương / xu ---------- */
+
+.sh-wallet {
+  gap: 14px;
+}
+
+.sh-pill {
+  position: relative;
+  gap: 8px;
+  height: 38px;
+  padding: 0 4px 0 34px;
+  border: 1px solid rgba(120, 165, 255, .55);
+  border-radius: 99px;
+  background: linear-gradient(180deg, rgba(14, 26, 74, .95), rgba(6, 12, 40, .95));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 0 12px rgba(50, 110, 255, .2);
+}
+
+.sh-pill img {
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  width: 36px;
+  height: 36px;
+  transform: translateY(-50%);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .5));
+}
+
+.sh-pill b {
+  min-width: 56px;
+  font-family: var(--num);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  text-align: center;
+  color: #fff;
+}
+
+.sh-pill button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid rgba(255, 255, 255, .85);
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255, 255, 255, .04);
+}
+
+.sh-pill button:hover {
+  border-color: #ffd86b;
+  color: #ffd86b;
+}
+
+/* ---------- Thẻ vật phẩm: ảnh trên, tên giữa, thanh giá dưới ---------- */
+
+.sh-grid {
+  gap: 12px;
+}
+
+.sh-card {
+  border-color: rgba(120, 165, 255, .45);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #13205a, #0a1238);
+}
+
+.sh-card.on {
+  border-color: #ffd86b;
+  box-shadow: 0 0 0 1px #ffd86b, 0 0 18px rgba(255, 210, 100, .4);
+}
+
+.sh-card-art,
+.sh-card-art.piece {
+  aspect-ratio: 236 / 128;
+}
+
+.sh-card-art.piece .sh-art {
+  object-position: center 40%;
+}
+
+.sh-card-name {
+  position: static;
+  padding: 6px 8px 2px;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: none;
+}
+
+.sh-card-foot {
+  min-height: 0;
+  padding: 4px 8px 8px;
+  border-top: 0;
+}
+
+.sh-pricebar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  height: 36px;
+  padding: 0 3px 0 10px;
+  border: 1px solid rgba(120, 165, 255, .35);
+  border-radius: 10px;
+  background: rgba(4, 9, 32, .75);
+}
+
+.sh-price {
+  gap: 6px;
+  font-family: var(--num);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.sh-price img {
+  width: 22px;
+  height: 22px;
+}
+
+.sh-chip {
+  min-width: 62px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 14px;
+  border: 1px solid #fff1c2;
+  border-radius: 9px;
+  font-family: var(--num);
+  font-size: 15px;
+  font-weight: 700;
+  color: #3a2401;
+  background: linear-gradient(180deg, #fff2b8 0%, #ffd760 40%, #f1b52c 75%, #d99a1c 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 2px 6px rgba(0, 0, 0, .35);
+}
+
+.sh-chip.soon {
+  border-color: rgba(255, 255, 255, .25);
+  color: #c8cde6;
+  background: rgba(255, 255, 255, .08);
+  box-shadow: none;
+}
+
+/* ---------- Khung chi tiết: giá + nút Mua ngay ---------- */
+
+.sh-detail-price .sh-price {
+  font-family: var(--num);
+  font-size: 30px;
+}
+
+.sh-buy {
+  height: 50px;
+  border: 1.5px solid #fff1c2;
+  border-radius: 14px;
+  font-family: var(--num);
+  font-size: 20px;
+  font-weight: 700;
+  color: #2e1c01;
+  background: linear-gradient(180deg, #fff2b8 0%, #ffd760 40%, #f1b52c 75%, #d99a1c 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 0 16px rgba(255, 200, 80, .35);
+}
+
+.sh-buy.small {
+  height: 40px;
+  font-size: 16px;
+}
+
+/* Màn hình vừa / nhỏ: vẫn 4 thẻ mỗi hàng lâu nhất có thể */
+@media (max-width: 1250px) {
+  .sh-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Thanh giá trong thẻ: không đè chữ khi thẻ hẹp */
+.sh-pricebar .sh-price {
+  min-width: 0;
+  font-size: clamp(14px, 1.1vw, 18px);
+  white-space: nowrap;
+}
+
+.sh-pricebar .sh-price img {
+  width: 20px;
+  height: 20px;
+}
+
+.sh-pricebar .sh-chip {
+  flex: none;
+  min-width: 0;
+  padding: 0 clamp(8px, .8vw, 14px);
+  font-size: clamp(13px, .95vw, 15px);
+  white-space: nowrap;
+}
+
+/* =====================================================
+   THEO MẪU (2): tiêu đề, ảnh không bị cắt, nút Mua ngay, hiệu ứng khung
+===================================================== */
+
+/* ---------- Tiêu đề "Cửa Hàng" ---------- */
+
+.sh-title {
+  gap: 8px;
+}
+
+.sh-laurel {
+  height: 62px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .6));
+}
+
+.sh-cart {
+  width: 50px;
+  height: 50px;
+  fill: initial;
+  stroke: none;
+  filter: drop-shadow(0 0 8px rgba(255, 210, 110, .45)) drop-shadow(0 3px 4px rgba(0, 0, 0, .6));
+}
+
+.sh-title h1 {
+  font-family: var(--font-num), "Times New Roman", Georgia, serif;
+  font-size: clamp(34px, 3vw, 46px);
+  font-weight: 700;
+  letter-spacing: .01em;
+  background: linear-gradient(180deg, #fffbe9 0%, #ffe7a3 35%, #f0c25a 60%, #c68a26 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: .6px rgba(90, 55, 8, .6);
+  filter: drop-shadow(0 0 10px rgba(255, 210, 110, .25)) drop-shadow(0 3px 4px rgba(0, 0, 0, .8));
+}
+
+.sh-title p {
+  font-family: var(--font-num), "Times New Roman", Georgia, serif;
+  font-style: normal;
+  font-size: 15px;
+  color: #eef0ff;
+}
+
+/* ---------- Ảnh vật phẩm: hiện trọn, nền mờ phía sau ---------- */
+
+.sh-art-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sh-art-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  background: var(--bg) center / cover no-repeat;
+  filter: blur(12px) brightness(.55) saturate(1.2);
+}
+
+.sh-art-wrap .sh-art {
+  position: relative;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .5));
+}
+
+.sh-card-art,
+.sh-card-art.piece {
+  aspect-ratio: 236 / 140;
+}
+
+.sh-card-art.piece .sh-art {
+  object-position: center;
+}
+
+/* ---------- Hiệu ứng khung thẻ ---------- */
+
+.sh-card {
+  isolation: isolate;
+  border: 1.5px solid rgba(120, 165, 255, .5);
+  background: linear-gradient(180deg, #13205a, #0a1238);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .35), inset 0 0 14px rgba(60, 120, 255, .12);
+}
+
+/* 4 góc vàng */
+.sh-card::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: 3;
+  border-radius: 10px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, #f3cf72, transparent) top left / 26px 1.5px no-repeat,
+    linear-gradient(180deg, #f3cf72, transparent) top left / 1.5px 26px no-repeat,
+    linear-gradient(270deg, #f3cf72, transparent) top right / 26px 1.5px no-repeat,
+    linear-gradient(180deg, #f3cf72, transparent) top right / 1.5px 26px no-repeat,
+    linear-gradient(90deg, #f3cf72, transparent) bottom left / 26px 1.5px no-repeat,
+    linear-gradient(0deg, #f3cf72, transparent) bottom left / 1.5px 26px no-repeat,
+    linear-gradient(270deg, #f3cf72, transparent) bottom right / 26px 1.5px no-repeat,
+    linear-gradient(0deg, #f3cf72, transparent) bottom right / 1.5px 26px no-repeat;
+  opacity: .7;
+  transition: opacity .2s ease;
+}
+
+/* Vệt sáng lướt qua khi rê chuột */
+.sh-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -70%;
+  z-index: 2;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(190, 220, 255, .18) 45%, rgba(255, 240, 200, .28) 50%, rgba(190, 220, 255, .18) 55%, transparent);
+  transform: skewX(-18deg);
+}
+
+.sh-card:hover::after {
+  animation: sh-sweep .8s ease;
+}
+
+@keyframes sh-sweep {
+  to {
+    left: 130%;
+  }
+}
+
+.sh-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(160, 200, 255, .95);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, .45), 0 0 16px rgba(80, 150, 255, .45), inset 0 0 16px rgba(80, 150, 255, .2);
+}
+
+.sh-card:hover::before {
+  opacity: 1;
+}
+
+/* Thẻ đang chọn: viền vàng phát sáng nhịp nhàng */
+.sh-card.on {
+  border-color: #ffd86b;
+  animation: sh-in .35s ease both, sh-glow 2.2s ease-in-out .4s infinite;
+}
+
+.sh-card.on::before {
+  opacity: 1;
+}
+
+@keyframes sh-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(255, 216, 107, .6), 0 0 14px rgba(255, 200, 90, .35);
+  }
+
+  50% {
+    box-shadow: 0 0 0 1px rgba(255, 216, 107, .9), 0 0 26px rgba(255, 200, 90, .6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sh-card.on {
+    animation: none;
+  }
+
+  .sh-card:hover::after {
+    animation: none;
+  }
+}
+
+/* ---------- Nút "Mua ngay" + nút quà như mẫu ---------- */
+
+.sh-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.sh-actions .sh-buy,
+.sh-detail .sh-buy {
+  position: relative;
+  overflow: hidden;
+  height: 54px;
+  gap: 12px;
+  border: 2px solid #fff3c9;
+  border-radius: 16px;
+  font-family: var(--font-num), "Times New Roman", Georgia, serif;
+  font-size: 23px;
+  font-weight: 700;
+  color: #2a1700;
+  background: linear-gradient(180deg, #fff6c8 0%, #ffe07a 30%, #f5bf3a 62%, #d9951b 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, .75),
+    inset 0 -3px 0 rgba(150, 90, 10, .45),
+    0 0 0 1px rgba(140, 90, 20, .6),
+    0 0 18px rgba(255, 200, 80, .45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .45);
+}
+
+/* Ánh sáng chạy ngang nút */
+.sh-detail .sh-buy:not(:disabled)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 30%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent);
+  transform: skewX(-20deg);
+  animation: sh-btn-shine 3.2s ease-in-out infinite;
+}
+
+@keyframes sh-btn-shine {
+  0%,
+  60% {
+    left: -40%;
+  }
+
+  100% {
+    left: 130%;
+  }
+}
+
+.sh-detail .sh-buy:not(:disabled):hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.sh-buy-cart {
+  width: 30px !important;
+  height: 30px !important;
+  fill: #2a1700 !important;
+  stroke: none !important;
+}
+
+.sh-gift {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 54px;
+  border: 2px solid rgba(150, 190, 255, .85);
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(180deg, #24418f, #0d1b52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 0 14px rgba(70, 140, 255, .35);
+}
+
+.sh-gift svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sh-gift:hover {
+  border-color: #ffd86b;
+}
+
+/* =====================================================
+   Chữ tên vật phẩm và "Đã sở hữu / Đang dùng": thanh mảnh, gọn
+===================================================== */
+
+.sh-card-name {
+  padding: 7px 10px 3px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: #f3e7c4;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .7);
+}
+
+.sh-card.on .sh-card-name {
+  color: #ffe9a8;
+}
+
+.sh-owned {
+  gap: 6px;
+  height: 36px;
+  border: 1px solid rgba(110, 230, 150, .3);
+  border-radius: 10px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: .02em;
+  color: #8ff0b0;
+  background: rgba(20, 70, 45, .35);
+}
+
+.sh-owned img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Tiêu đề "Cửa Hàng": cùng kiểu chữ với "Đấu Luyện", icon giỏ hàng nằm cùng hàng */
+.sh-h1row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sh-h1row .sh-cart {
+  width: 0.95em;
+  height: 0.95em;
+  font-size: clamp(34px, 3.4vw, 48px);
+}
+
+.sh-title h1 {
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-weight: 800;
+  font-size: clamp(34px, 3.4vw, 48px);
+  line-height: 1.1;
+  letter-spacing: 0;
+  background: linear-gradient(180deg, #fff6d8 0%, #f3cf78 48%, #c8922f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: 0;
+  color: transparent;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .75));
+}

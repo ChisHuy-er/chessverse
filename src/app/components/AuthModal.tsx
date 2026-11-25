@@ -9,6 +9,8 @@ export type UserProfile = {
   username: string;
   displayName: string;
   avatarUrl?: string | null;
+  avatarId?: string | null;
+  avatarFrame?: string | null;
   elo: number;
   createdAt?: string;
 };
@@ -63,6 +65,9 @@ export default function AuthModal({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // Để tự nhận quốc gia (lá cờ) của người chơi
+          "x-client-tz": Intl.DateTimeFormat().resolvedOptions().timeZone ?? "",
+          "x-client-locale": navigator.language ?? "",
         },
         body: JSON.stringify(body),
       });

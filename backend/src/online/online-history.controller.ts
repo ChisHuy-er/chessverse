@@ -4,11 +4,14 @@ import {
   Req,
   UseGuards,
   Param,
+  Query,
   NotFoundException,
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
+
+const HISTORY_LIMIT = 30;
 
 @Controller('online')
 @UseGuards(JwtAuthGuard)
@@ -20,62 +23,59 @@ export class OnlineHistoryController {
   @Get('history')
   async getHistory(
     @Req() req: { user: { sub: string } },
+    @Query('page') pageRaw?: string,
+    @Query('mode') modeRaw?: string,
+    @Query('size') sizeRaw?: string,
   ) {
     const userId = req.user.sub;
+    const size = Math.min(30, Math.max(1, Number(sizeRaw) || 30));
+    const mode: 'RANKED' | 'CASUAL' | undefined =
+      modeRaw === 'RANKED' ? 'RANKED' : modeRaw === 'CASUAL' ? 'CASUAL' : undefined;
 
-    const matches = await this.prisma.match.findMany({
-      where: {
-        status: 'COMPLETED',
-        OR: [
-          { whiteUserId: userId },
-          { blackUserId: userId },
-        ],
-      },
-      orderBy: {
-        finishedAt: 'desc',
-      },
-      take: 30,
-      include: {
-        whiteUser: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            avatarUrl: true,
-          },
+    const where = {
+      status: 'COMPLETED' as const,
+      ...(mode ? { mode } : {}),
+      OR: [{ whiteUserId: userId }, { blackUserId: userId }],
+    };
+
+    // Lịch sử chỉ giữ 30 ván gần nhất: có ván mới thì ván cũ nhất bị đẩy ra
+    const total = Math.min(HISTORY_LIMIT, await this.prisma.match.count({ where }));
+    const pages = Math.max(1, Math.ceil(total / size));
+    const page = Math.min(pages, Math.max(1, Number(pageRaw) || 1));
+
+    const userSelect = {
+      id: true,
+      username: true,
+      displayName: true,
+      avatarUrl: true,
+      avatarId: true,
+      avatarFrame: true,
+      elo: true,
+    };
+
+    const [matches, me] = await Promise.all([
+      this.prisma.match.findMany({
+        where,
+        orderBy: { finishedAt: 'desc' },
+        skip: (page - 1) * size,
+        take: Math.max(0, Math.min(size, HISTORY_LIMIT - (page - 1) * size)),
+        include: {
+          whiteUser: { select: userSelect },
+          blackUser: { select: userSelect },
         },
-        blackUser: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            avatarUrl: true,
-          },
-        },
-      },
-    });
+      }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: userSelect }),
+    ]);
 
     return {
       message: 'Lấy lịch sử đấu thành công',
-      total: matches.length,
+      total,
+      page,
+      pages,
+      me,
       matches: matches.map((match) => {
         const isWhite = match.whiteUserId === userId;
-
-        const opponent = isWhite
-          ? match.blackUser
-          : match.whiteUser;
-
-        const myEloBefore = isWhite
-          ? match.whiteEloBefore
-          : match.blackEloBefore;
-
-        const myEloChange = isWhite
-          ? match.whiteEloChange
-          : match.blackEloChange;
-
-        const myEloAfter = isWhite
-          ? match.whiteEloAfter
-          : match.blackEloAfter;
+        const opponent = isWhite ? match.blackUser : match.whiteUser;
 
         let myResult: 'WIN' | 'LOSS' | 'DRAW';
 
@@ -90,39 +90,36 @@ export class OnlineHistoryController {
           myResult = 'LOSS';
         }
 
+        // Thời lượng ván (giây) và số nước đi
+        const durationSec =
+          match.finishedAt && match.startedAt
+            ? Math.max(0, Math.round((match.finishedAt.getTime() - match.startedAt.getTime()) / 1000))
+            : null;
+        const moveCount = Array.isArray(match.moves) ? match.moves.length : 0;
+
         return {
           id: match.id,
           mode: match.mode,
           result: match.result,
           myResult,
           reason: match.reason,
-
           myColor: isWhite ? 'WHITE' : 'BLACK',
-
           opponent,
-
-          myEloBefore,
-          myEloChange,
-          myEloAfter,
-
-          opponentEloBefore: isWhite
-            ? match.blackEloBefore
-            : match.whiteEloBefore,
-
-          opponentEloChange: isWhite
-            ? match.blackEloChange
-            : match.whiteEloChange,
-
-          opponentEloAfter: isWhite
-            ? match.blackEloAfter
-            : match.whiteEloAfter,
-
+          myEloBefore: isWhite ? match.whiteEloBefore : match.blackEloBefore,
+          myEloChange: isWhite ? match.whiteEloChange : match.blackEloChange,
+          myEloAfter: isWhite ? match.whiteEloAfter : match.blackEloAfter,
+          opponentEloBefore: isWhite ? match.blackEloBefore : match.whiteEloBefore,
+          opponentEloChange: isWhite ? match.blackEloChange : match.whiteEloChange,
+          opponentEloAfter: isWhite ? match.blackEloAfter : match.whiteEloAfter,
+          durationSec,
+          moveCount,
           startedAt: match.startedAt,
           finishedAt: match.finishedAt,
         };
       }),
     };
   }
+
     @Get('history/:id')
   async getMatchDetail(
     @Param('id') matchId: string,
@@ -146,6 +143,9 @@ export class OnlineHistoryController {
             username: true,
             displayName: true,
             avatarUrl: true,
+            avatarId: true,
+            avatarFrame: true,
+            elo: true,
           },
         },
         blackUser: {
@@ -154,6 +154,9 @@ export class OnlineHistoryController {
             username: true,
             displayName: true,
             avatarUrl: true,
+            avatarId: true,
+            avatarFrame: true,
+            elo: true,
           },
         },
       },

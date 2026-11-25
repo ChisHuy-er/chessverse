@@ -1,9 +1,18 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import OnlineMatchOverlay from "./components/OnlineMatchOverlay";
 import AuthModal, { type UserProfile } from "./components/AuthModal";
+import ProfileMenu from "./components/ProfileMenu";
+import NotificationBell from "./components/NotificationBell";
+import TopWallet from "./components/TopWallet";
+import IdleLogout from "./components/IdleLogout";
+import SettingsMenu from "./components/SettingsMenu";
+import { USER_EVENT } from "./components/SettingsDialog";
 import { useRouter } from "next/navigation";
-import { useTheme } from "./components/ThemeProvider";
+import PlayerAvatar from "./components/PlayerAvatar";
+import { getCover } from "./lib/appearance";
+import { HeroSlides, HERO_SLIDE_COUNT, useHeroSlide } from "./components/HeroSlides";
+import "./home-leaders.css";
 
 type DashboardHistoryMatch = {
   id: string;
@@ -15,12 +24,12 @@ type DashboardHistoryMatch = {
 const menuItems = [
   { name: "Trang chủ", icon: "home" },
   { name: "Khóa học", icon: "book" },
-  { name: "Bài học", icon: "grad" },
   { name: "Thử thách", icon: "trophy" },
   { name: "Đấu luyện", icon: "swords" },
   { name: "Bảng xếp hạng", icon: "chart" },
-  { name: "Hồ sơ", icon: "people" },
-  { name: "Cài đặt", icon: "gear" },
+  { name: "Câu lạc bộ", icon: "club" },
+  { name: "Bạn bè", icon: "friends" },
+  { name: "Cửa hàng", icon: "shop" },
 ];
 
 const courses = [
@@ -30,38 +39,81 @@ const courses = [
   { name: "Chiến thuật", en: "Tactics", image: "course4" },
 ];
 
-const missions = [
-  { text: "Chơi 1 ván xếp hạng", done: false },
-  { text: "Thắng 1 ván đấu", done: false },
-  { text: "Chơi 1 ván với máy", done: false },
+// Nhiệm vụ mặc định khi chưa đăng nhập
+const GUEST_MISSIONS = [
+  { text: "Chơi 3 trận đấu online", done: false },
+  { text: "Thắng 1 trận đấu online", done: false },
+  { text: "Giải 3 bài trên Bản đồ thử thách", done: false },
 ];
 
-const leaderboard = [
-  { rank: 1, name: "GrandMaster", rating: 2845, country: "🇻🇳", change: "+24" },
-  { rank: 2, name: "KnightSlayer", rating: 2790, country: "🇺🇸", change: "+18" },
-  { rank: 3, name: "ShadowKing", rating: 2756, country: "🇰🇷", change: "+12" },
-  { rank: 4, name: "ChessMaster", rating: 2698, country: "🇯🇵", change: "+8" },
-];
+type Leader = {
+  rank: number;
+  id: string;
+  name: string;
+  elo: number;
+  avatarId?: string | null;
+  avatarFrame?: string | null;
+  cover?: string | null;
+};
 
 export default function Home() {
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
   const [activeMenu, setActiveMenu] = useState("Trang chủ");
+  const [heroSlide, setHeroSlide] = useHeroSlide();
   const [modal, setModal] = useState<"play" | "season" | "shop" | null>(null);
   const [notice, setNotice] = useState("");
+  const [missions, setMissions] = useState(GUEST_MISSIONS);
+
+  // Bị tự đăng xuất vì treo máy quá lâu
+  useEffect(() => {
+    const url = new URL(window.location.href);
+
+    if (url.searchParams.get("idle") === null) return;
+
+    url.searchParams.delete("idle");
+    window.history.replaceState(null, "", url.pathname + url.search);
+    setNotice("Bạn đã được tự động đăng xuất vì không hoạt động quá 30 phút. Hãy đăng nhập lại để tiếp tục.");
+  }, []);
+
+  // Nhiệm vụ hôm nay lấy từ trang Thử thách
+  useEffect(() => {
+    fetch("/api/challenges", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { quests?: { scope: string; title: string; progress: number; target: number }[] } | null) => {
+        const daily = d?.quests?.filter((q) => q.scope === "daily").slice(0, 3);
+
+        if (daily?.length) {
+          setMissions(daily.map((q) => ({ text: `${q.title} (${q.progress}/${q.target})`, done: q.progress >= q.target })));
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [welcomeToastId, setWelcomeToastId] = useState(0);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [historyMatches, setHistoryMatches] = useState<
       DashboardHistoryMatch[]
     >([]);
   const [authOpen, setAuthOpen] = useState(false);
+  const [leaders, setLeaders] = useState<Leader[]>([]);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [pendingMode, setPendingMode] = useState<
   "ranked" | "casual" | "ai" | null
   >(null);
   const [onlineOpen, setOnlineOpen] = useState(false);
   const [onlineMode, setOnlineMode] = useState<"ranked" | "casual">("ranked");
+
+  // Đổi tên hiển thị trong Cài đặt → Tài khoản: cập nhật ngay.
+  useEffect(() => {
+    function onUser(e: Event) {
+      const { displayName } = (e as CustomEvent<{ displayName: string }>).detail;
+
+      setUser((current) => (current ? { ...current, displayName } : current));
+    }
+
+    window.addEventListener(USER_EVENT, onUser);
+
+    return () => window.removeEventListener(USER_EVENT, onUser);
+  }, []);
 
 // Tự động đóng thông báo chào mừng sau 4 giây
   useEffect(() => {
@@ -104,6 +156,34 @@ export default function Home() {
   };
   }, []);
 
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLeaders() {
+      try {
+        const response = await fetch("/api/online/leaderboard", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        if (active && Array.isArray(data.leaders)) {
+          setLeaders(data.leaders);
+        }
+      } catch (error) {
+        console.error("Không thể tải bảng xếp hạng:", error);
+      }
+    }
+
+    loadLeaders();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -179,7 +259,6 @@ export default function Home() {
       });
 
     setUser(null);
-    setProfileMenuOpen(false);
     setNotice("Bạn đã đăng xuất khỏi ChessVerse.");
   } catch (error) {
     console.error("Đăng xuất thất bại:", error);
@@ -189,7 +268,42 @@ export default function Home() {
 
   function selectMenu(name: string) {
   if (name === "Đấu luyện") {
-    setModal("play");
+    router.push("/practice");
+    return;
+  }
+
+  if (name === "Bảng xếp hạng") {
+    router.push("/leaderboard");
+    return;
+  }
+
+  if (name === "Thử thách") {
+    router.push("/challenges");
+    return;
+  }
+
+  if (name === "Hồ sơ") {
+    router.push("/profile");
+    return;
+  }
+
+  if (name === "Câu lạc bộ") {
+    router.push("/club");
+    return;
+  }
+
+  if (name === "Bạn bè") {
+    router.push("/friends");
+    return;
+  }
+
+  if (name === "Cửa hàng") {
+    router.push("/shop");
+    return;
+  }
+
+  if (name === "Khóa học") {
+    router.push("/courses");
     return;
   }
 
@@ -247,6 +361,7 @@ const eloDelta =
 
   return (
     <main className="ac-shell">
+      <IdleLogout active={!!user} />
       <aside className="ac-sidebar">
         <div className="ac-logo">
           <div className="ac-logo-emblem" />
@@ -296,77 +411,19 @@ const eloDelta =
           </div>
 
           <div className="ac-top-actions">
-            <button
-              className="ac-bell"
-              aria-label="Thông báo"
-              onClick={() => setNotice("Bạn chưa có thông báo mới.")}
-            >
-              <span className="ac-bell-icon" />
-            </button>
+            <TopWallet />
+            <NotificationBell userId={user?.id} />
+            <SettingsMenu />
 
-            {/* Công tắc Dark Mode / Light Mode */}
-            <button
-              type="button"
-              className={`theme-toggle ac-theme ${theme}`}
-              onClick={toggleTheme}
-              aria-label={
-                theme === "dark"
-                  ? "Chuyển sang chế độ sáng"
-                  : "Chuyển sang chế độ tối"
-              }
-              aria-pressed={theme === "light"}
-              title={theme === "dark" ? "Chế độ sáng" : "Chế độ tối"}
-            >
-              {theme === "dark" ? (
-                <span className="theme-icon moon-icon">☾</span>
-              ) : (
-                <span className="theme-icon sun-icon">☀</span>
-              )}
-            </button>
 
-            <div className="profile-menu-wrap">
-              <button
-                className="ac-profile"
-                onClick={() => {
-                  if (user) {
-                    setProfileMenuOpen(!profileMenuOpen);
-                  } else {
-                    setAuthMode("login");
-                    setAuthOpen(true);
-                  }
-                }}
-              >
-                <span className="ac-avatar">
-                  {user ? user.displayName.charAt(0).toUpperCase() : "?"}
-                </span>
-                <span className="ac-profile-info">
-                  <strong>{user?.displayName ?? "Đăng nhập"}</strong>
-                  <small>{user ? `${user.elo.toLocaleString("en-US")} Elo` : "Khách"}</small>
-                </span>
-                <span className="ac-chevron">⌄</span>
-              </button>
-
-              {profileMenuOpen && user && (
-                <div className="profile-dropdown">
-                  <strong>{user.displayName}</strong>
-                  <span>@{user.username}</span>
-                  <span>{user.email}</span>
-                  <span>{user.elo.toLocaleString("en-US")} Elo</span>
-
-                  <button
-                    className="ac-dropdown-link"
-                    onClick={() => {
-                      setProfileMenuOpen(false);
-                      router.push("/history");
-                    }}
-                  >
-                    Lịch sử đấu
-                  </button>
-
-                  <button onClick={handleLogout}>Đăng xuất</button>
-                </div>
-              )}
-            </div>
+            <ProfileMenu
+              user={user}
+              onGuestClick={() => {
+                setAuthMode("login");
+                setAuthOpen(true);
+              }}
+              onLogout={handleLogout}
+            />
           </div>
         </header>
 
@@ -381,7 +438,7 @@ const eloDelta =
         <div className="ac-grid">
           <div className="ac-col-main">
             {/* BANNER */}
-            <section className="ac-hero">
+            <section className={`ac-hero${heroSlide ? " hs-away" : ""}`}>
               <div className="ac-hero-shade" />
               <div className="ac-hero-center">
                 <h2>ChessVerse</h2>
@@ -389,14 +446,20 @@ const eloDelta =
                 <p>
                   Rèn luyện tư duy - Nâng tầm chiến thuật - Chinh phục đỉnh cao
                 </p>
-                <button className="ac-gold-button" onClick={() => setModal("play")}>
+                <button className="ac-gold-button" tabIndex={heroSlide ? -1 : 0} onClick={() => setModal("play")}>
                   ▶ Chơi ngay
                 </button>
               </div>
-              <div className="ac-hero-dots" aria-hidden="true">
-                <i />
-                <i className="on" />
-                <i />
+              <HeroSlides slide={heroSlide} onShop={() => router.push("/shop")} onPlay={() => setModal("play")} />
+              <div className="ac-hero-dots">
+                {Array.from({ length: HERO_SLIDE_COUNT }, (_, i) => (
+                  <button
+                    key={i}
+                    className={i === heroSlide ? "on" : ""}
+                    aria-label={`Trang ${i + 1}`}
+                    onClick={() => setHeroSlide(i)}
+                  />
+                ))}
               </div>
             </section>
 
@@ -437,7 +500,7 @@ const eloDelta =
               </div>
             </section>
 
-            {/* THỐNG KÊ + BẢNG XẾP HẠNG */}
+            {/* THỐNG KÊ */}
             <div className="ac-bottom">
               <section className="ac-panel ac-stats">
                 <div className="ac-panel-head">
@@ -497,36 +560,6 @@ const eloDelta =
                 </div>
               </section>
 
-              <section className="ac-panel ac-board">
-                <div className="ac-panel-head">
-                  <h3>
-                    <span className="ac-head-icon">♕</span> Bảng xếp hạng
-                  </h3>
-                  <button
-                    className="ac-link"
-                    onClick={() => selectMenu("Bảng xếp hạng")}
-                  >
-                    Xem thêm →
-                  </button>
-                </div>
-
-                {leaderboard.slice(0, 3).map((player) => (
-                  <div className="ac-board-row" key={player.rank}>
-                    <span className={`ac-rank rank-${player.rank}`}>
-                      {player.rank}
-                    </span>
-                    <span className="ac-board-avatar">
-                      {player.name.charAt(0)}
-                    </span>
-                    <strong>
-                      {player.name} {player.country}
-                    </strong>
-                    <span className="ac-board-elo">
-                      Elo {player.rating.toLocaleString("en-US")}
-                    </span>
-                  </div>
-                ))}
-              </section>
             </div>
           </div>
 
@@ -576,7 +609,9 @@ const eloDelta =
                 <h3>
                   <span className="ac-head-icon">⚑</span> Nhiệm vụ hôm nay
                 </h3>
-                <span className="ac-chip">SẮP RA MẮT</span>
+                <span className="ac-chip">
+                  {missions.filter((m) => m.done).length}/{missions.length}
+                </span>
               </div>
 
               <div className="ac-missions">
@@ -599,12 +634,57 @@ const eloDelta =
                 <div className="ac-chest" />
                 <button
                   className="ac-gold-button"
-                  onClick={() =>
-                    setNotice("Hệ thống nhiệm vụ sẽ được phát triển sau.")
-                  }
+                  onClick={() => router.push("/challenges")}
                 >
                   Nhận thưởng
                 </button>
+              </div>
+            </section>
+
+            {/* BẢNG XẾP HẠNG (top 3) */}
+            <section className="ac-panel ac-board">
+              <div className="ac-panel-head">
+                <h3>
+                  <span className="ac-head-icon">♕</span> Bảng xếp hạng
+                </h3>
+                <button
+                  className="ac-link"
+                  onClick={() => selectMenu("Bảng xếp hạng")}
+                >
+                  Xem thêm →
+                </button>
+              </div>
+
+              {leaders.length === 0 && (
+                <p className="ac-board-empty">Chưa có người chơi nào.</p>
+              )}
+
+              {/* Top 3 — cùng kiểu Bảng xếp hạng: ảnh nền hồ sơ, avatar + khung, khiên hạng */}
+              <div className="hl-list">
+                {leaders.slice(0, 3).map((player) => (
+                  <button
+                    className={`hl-row r${player.rank}${
+                      player.id === (user as { id?: string } | null)?.id ? " me" : ""
+                    }`}
+                    key={player.id}
+                    style={{ "--cover": `url(${getCover(player.cover).src})` } as CSSProperties}
+                    onClick={() => selectMenu("Bảng xếp hạng")}
+                  >
+                    <img
+                      className="hl-shield"
+                      src={`/images/academy/lb/shield${player.rank}.png`}
+                      alt={`Hạng ${player.rank}`}
+                    />
+                    <PlayerAvatar
+                      avatar={player.avatarId}
+                      frame={player.avatarFrame}
+                      name={player.name}
+                      className="hl-pa"
+                    />
+                    <strong>{player.name}</strong>
+                    <span className="hl-elo">{player.elo.toLocaleString("en-US")} Elo</span>
+                  </button>
+                ))}
               </div>
             </section>
           </div>

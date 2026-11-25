@@ -1,0 +1,1628 @@
+/* =====================================================
+   TRANG CÂU LẠC BỘ (/club)
+===================================================== */
+
+.cl-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 10px;
+  color: #eef0fb;
+}
+
+.cl-muted {
+  color: #9aa3c9;
+  font-size: 13px;
+}
+
+.cl-error {
+  color: #ff9a9a;
+  font-size: 13px;
+}
+
+.cl-error.block {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 120, 120, .4);
+  border-radius: 10px;
+  background: rgba(220, 60, 60, .12);
+}
+
+.cl-notice {
+  margin: 0;
+}
+
+/* ---------- Tiêu đề + tab ---------- */
+
+.cl-top {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.cl-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 18px;
+  border: 2px solid rgba(231, 189, 95, .8);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #13246a, #0a1440);
+  box-shadow: 0 0 18px rgba(80, 150, 255, .35), inset 0 0 12px rgba(80, 150, 255, .2);
+}
+
+.cl-title img {
+  height: 44px;
+}
+
+.cl-title h1 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1.1;
+  background: linear-gradient(180deg, #fff6d8, #f3cf78 50%, #c8922f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .7));
+}
+
+.cl-tabs {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cl-tabs button {
+  position: relative;
+  height: 44px;
+  padding: 0 8px;
+  border: 1.5px solid rgba(110, 160, 255, .55);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #eef0fb;
+  background: linear-gradient(180deg, #16307a, #0b1748);
+  box-shadow: inset 0 0 10px rgba(80, 150, 255, .2);
+}
+
+.cl-tabs button:hover {
+  filter: brightness(1.15);
+}
+
+.cl-tabs button.on {
+  border-color: #ffe7a6;
+  color: #2b1a02;
+  background: linear-gradient(180deg, #ffe9a8, #f2c45c 45%, #c98d24);
+  box-shadow: 0 0 14px rgba(242, 196, 92, .45);
+}
+
+.cl-tabs button.soon {
+  opacity: .65;
+}
+
+/* ---------- Khung chung ---------- */
+
+.cl-panel {
+  position: relative;
+  padding: 12px 16px 14px;
+  border: 1.5px solid rgba(231, 189, 95, .6);
+  border-radius: 16px;
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(70, 130, 255, .16), transparent 70%),
+    linear-gradient(180deg, #10225c, #0a1440);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .35), inset 0 0 0 1px rgba(89, 184, 255, .12);
+}
+
+.cl-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.cl-panel-head > img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.cl-panel-head h3 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffe3a0;
+}
+
+.cl-panel-extra {
+  margin-left: auto;
+}
+
+.cl-center {
+  margin: 40px auto;
+  max-width: 520px;
+  text-align: center;
+}
+
+.cl-more {
+  border: 0;
+  cursor: pointer;
+  font-size: 14px;
+  color: #dfe6ff;
+  background: transparent;
+}
+
+.cl-more:hover {
+  color: #ffe3a0;
+}
+
+/* Nút */
+.cl-btn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 99px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cl-btn.small {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.cl-btn.wide {
+  width: 100%;
+}
+
+.cl-btn.gold {
+  border: 1px solid #ffe7a6;
+  color: #2b1a02;
+  background: linear-gradient(180deg, #ffe9a8, #f2c45c 45%, #c98d24);
+}
+
+.cl-btn.ghost {
+  border: 1px solid rgba(231, 189, 95, .6);
+  color: #ffe3a0;
+  background: rgba(224, 182, 90, .08);
+}
+
+.cl-btn.danger {
+  border: 1px solid rgba(255, 120, 120, .55);
+  color: #ffadad;
+  background: rgba(220, 60, 60, .12);
+}
+
+.cl-btn:disabled {
+  cursor: default;
+  opacity: .5;
+}
+
+.cl-pen {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  transition: transform .15s ease;
+}
+
+.cl-pen:hover {
+  transform: scale(1.1);
+}
+
+.cl-pen img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cl-bar {
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(110, 170, 255, .45);
+  border-radius: 99px;
+  background: rgba(0, 0, 0, .4);
+}
+
+.cl-bar b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width .6s ease;
+}
+
+.cl-bar.blue b {
+  background: linear-gradient(90deg, #2a7bff, #66d1ff);
+  box-shadow: 0 0 10px rgba(90, 180, 255, .7);
+}
+
+.cl-bar.gold b {
+  background: linear-gradient(90deg, #c98d24, #ffe08a);
+}
+
+/* ---------- Lưới Tổng quan ---------- */
+
+/* 3 cột độc lập: mỗi cột tự xếp dọc nên không có khoảng trống bị kéo giãn */
+.cl-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 320px;
+  gap: 14px;
+  align-items: start;
+}
+
+.cl-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cl-row1 {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.cl-banner {
+  position: relative;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.cl-banner img {
+  width: 100%;
+  max-height: 330px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, .5));
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.cl-banner.editable {
+  cursor: pointer;
+}
+
+.cl-banner.editable:hover img {
+  transform: translateY(-3px) scale(1.02);
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, .55)) drop-shadow(0 0 14px rgba(231, 189, 95, .55));
+}
+
+.cl-banner span {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  padding: 4px 12px;
+  border: 1px solid rgba(231, 189, 95, .8);
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff2cf;
+  background: rgba(6, 12, 42, .85);
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity .2s ease;
+}
+
+.cl-banner.editable:hover span,
+.cl-banner.editable:focus-visible span {
+  opacity: 1;
+}
+
+/* Chọn cờ */
+.cl-pop.cl-flags-pop {
+  width: min(760px, 100%);
+}
+
+.cl-flags-body {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.cl-flags-preview {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, .5));
+}
+
+.cl-flags-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.cl-flag-item {
+  aspect-ratio: 3 / 4;
+  padding: 6px;
+  border: 2px solid rgba(110, 160, 255, .3);
+  border-radius: 12px;
+  cursor: pointer;
+  background: rgba(10, 20, 60, .6);
+  transition: border-color .15s ease, transform .15s ease;
+}
+
+.cl-flag-item.round {
+  aspect-ratio: 1;
+}
+
+.cl-flag-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(110, 180, 255, .8);
+}
+
+.cl-flag-item.on {
+  border-color: #f2c45c;
+  box-shadow: 0 0 14px rgba(242, 196, 92, .45);
+}
+
+.cl-flag-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cl-rank-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cl-rank-name img {
+  width: 22px;
+  height: 28px;
+  flex: none;
+  object-fit: contain;
+}
+
+.cl-rank-name span {
+  min-width: 0;
+}
+
+.cl-list-flag {
+  width: 40px;
+  height: 46px;
+  object-fit: contain;
+}
+
+.cl-info {
+}
+
+.cl-info h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 26px;
+  line-height: 1.15;
+  color: #ffe3a0;
+}
+
+.cl-level {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.cl-level b {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 20px;
+}
+
+.cl-level small {
+  font-size: 12px;
+  color: #c6cbe6;
+}
+
+.cl-facts {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-facts li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+  font-size: 15px;
+  color: #dfe3f7;
+}
+
+.cl-facts img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.cl-facts b {
+  color: #fff;
+}
+
+.cl-quote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(110, 160, 255, .35);
+  border-radius: 12px;
+  background: rgba(10, 20, 60, .6);
+}
+
+.cl-quote p {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #e3e6f6;
+}
+
+.cl-castle {
+  aspect-ratio: 422 / 210;
+  border: 2px solid rgba(231, 189, 95, .7);
+  border-radius: 16px;
+  background: center / cover no-repeat;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .4);
+}
+
+.cl-quick {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cl-quick button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  border: 1.5px solid rgba(110, 160, 255, .6);
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #eef0fb;
+  background: linear-gradient(180deg, #16307a, #0b1748);
+  transition: transform .15s ease, border-color .15s ease;
+}
+
+.cl-quick button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(231, 189, 95, .8);
+}
+
+.cl-quick img {
+  width: 44px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.cl-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cl-campaign {
+  min-height: 150px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(8, 16, 52, .92) 0%, rgba(8, 16, 52, .5) 45%, rgba(8, 16, 52, .1)),
+    #0a1440 var(--bg) center bottom / cover no-repeat;
+}
+
+.cl-campaign p {
+  margin: -4px 0 0 44px;
+  font-size: 13px;
+  color: #e3e6f6;
+  text-shadow: 0 1px 4px #000;
+}
+
+.cl-tag {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(180deg, #e5484d, #b8232b);
+}
+
+.cl-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cl-rank-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.cl-rank-row.mine {
+  border: 1px solid rgba(231, 189, 95, .55);
+  background: rgba(224, 182, 90, .1);
+}
+
+.cl-rank-row > img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.cl-rank-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-rank-row b,
+.cl-elo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cl-rank-row b img,
+.cl-elo img {
+  width: 20px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.cl-rank-no {
+  font-weight: 800;
+  text-align: center;
+  color: #ffe3a0;
+}
+
+.cl-ranking + .cl-more {
+  display: block;
+  margin: 8px auto 0;
+}
+
+.cl-announce {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(110, 160, 255, .3);
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-line;
+  color: #e3e6f6;
+  background: rgba(10, 20, 60, .5);
+}
+
+/* Thành viên */
+.cl-member {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+}
+
+.cl-member:has(.cl-member-actions) {
+  grid-template-columns: 54px minmax(0, 1fr) auto auto auto;
+}
+
+.cl-member .pa {
+  width: 54px;
+  font-size: 7px;
+}
+
+.cl-member-name strong {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.cl-member-name strong img {
+  width: 18px;
+}
+
+.cl-member-name em {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  color: #9aa3c9;
+}
+
+.cl-role {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #dfe3f7;
+  background: rgba(110, 160, 255, .2);
+}
+
+.cl-role.leader {
+  color: #ffd9d9;
+  background: rgba(200, 60, 80, .45);
+}
+
+.cl-role.officer {
+  color: #fff2cf;
+  background: rgba(224, 182, 90, .3);
+}
+
+.cl-status {
+  font-size: 13px;
+  color: #8a93b8;
+}
+
+.cl-status::before {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  content: "";
+  background: #6b7394;
+}
+
+.cl-status.on {
+  color: #7dff9a;
+}
+
+.cl-status.on::before {
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+}
+
+.cl-member-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Nhiệm vụ */
+.cl-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #dfe3f7;
+}
+
+.cl-reset img {
+  width: 20px;
+}
+
+.cl-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cl-task {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto 40px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(110, 160, 255, .3);
+  border-radius: 14px;
+  background: rgba(10, 20, 60, .55);
+}
+
+.cl-task.done {
+  border-color: rgba(125, 255, 154, .4);
+}
+
+.cl-task-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid rgba(231, 189, 95, .6);
+  border-radius: 50%;
+  background: radial-gradient(circle, #1a3488, #0a1440);
+}
+
+.cl-task-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.cl-task strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.cl-task-count {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cl-task-check {
+  width: 38px;
+  height: 38px;
+}
+
+/* Cài đặt */
+.cl-settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.cl-set-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.cl-set-row > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.cl-set-row strong {
+  display: block;
+  font-size: 15px;
+}
+
+.cl-set-row small {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #aab1d4;
+}
+
+.cl-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+/* ---------- Chưa có CLB ---------- */
+
+.cl-none {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cl-none-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 24px;
+  border: 1.5px solid rgba(231, 189, 95, .6);
+  border-radius: 18px;
+  background:
+    linear-gradient(90deg, rgba(8, 16, 52, .95) 30%, rgba(8, 16, 52, .4)),
+    #0a1440 url(/images/academy/club/castle.jpg) right center / cover no-repeat;
+}
+
+.cl-none-hero img {
+  width: 110px;
+}
+
+.cl-none-hero h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 26px;
+  color: #ffe3a0;
+}
+
+.cl-none-hero p {
+  max-width: 560px;
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #dfe3f7;
+}
+
+.cl-none-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.cl-field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.cl-field span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+  color: #c6cbe6;
+}
+
+.cl-field input,
+.cl-field textarea,
+.cl-search,
+.cl-pop textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(110, 160, 255, .5);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  color: #fff;
+  background: rgba(10, 20, 60, .9);
+  resize: vertical;
+}
+
+.cl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 420px;
+  margin-top: 10px;
+  overflow-y: auto;
+}
+
+.cl-list-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(110, 160, 255, .25);
+  border-radius: 12px;
+  background: rgba(10, 20, 60, .5);
+}
+
+.cl-list-row.mine {
+  border-color: rgba(231, 189, 95, .7);
+  background: rgba(224, 182, 90, .1);
+}
+
+.cl-list-row strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-list-row small {
+  font-size: 12px;
+  color: #9aa3c9;
+}
+
+.cl-rank-img {
+  width: 38px;
+}
+
+/* Ô sửa nổi */
+.cl-pop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(3, 6, 20, .6);
+  backdrop-filter: blur(4px);
+}
+
+.cl-pop {
+  width: min(460px, 100%);
+  padding: 16px;
+  border: 1.5px solid rgba(231, 189, 95, .7);
+  border-radius: 16px;
+  color: #eef0fb;
+  background: linear-gradient(180deg, #13246a, #0a1440);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .6);
+}
+
+.cl-pop.wide {
+  width: min(560px, 100%);
+}
+
+.cl-pop h4 {
+  margin: 0 0 10px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 20px;
+  color: #ffe3a0;
+}
+
+.cl-pop-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.cl-pop-foot small {
+  margin-right: auto;
+  color: #9aa3c9;
+}
+
+/* ---------- Màn hình nhỏ ---------- */
+
+/* Màn hình vừa: giữ 3 cột, cột phải hẹp lại */
+@media (max-width: 1400px) {
+  .cl-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 270px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .cl-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+
+  .cl-side {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .cl-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cl-grid,
+  .cl-side,
+  .cl-settings,
+  .cl-none-grid,
+  .cl-flags-body {
+    grid-template-columns: 1fr;
+  }
+
+  .cl-row1 {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+
+  .cl-flags-preview {
+    display: none;
+  }
+}
+
+/* Tiêu đề "Câu lạc bộ": cùng kiểu chữ với "Đấu Luyện" */
+.cl-title h1 {
+  font-style: italic;
+  font-weight: 800;
+  font-size: clamp(28px, 2.6vw, 38px);
+  background: linear-gradient(180deg, #fff6d8 0%, #f3cf78 48%, #c8922f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .75));
+}
+
+/* =====================================================
+   TỔNG QUAN CLB (bố cục mới)
+===================================================== */
+
+/* 4 nút nhanh: Đóng góp, Quản lý CLB, Mời thành viên, Rời CLB */
+.cl-quick {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.cl-quick button {
+  min-height: 84px;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.cl-quick svg {
+  width: 34px;
+  height: 34px;
+  fill: none;
+  stroke: #ffd86b;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .5));
+}
+
+.cl-quick button.danger:hover {
+  border-color: #ff8a8a;
+}
+
+.cl-quick button.danger svg {
+  stroke: #ff9b9b;
+}
+
+/* Giải đấu CLB: nền lâu đài */
+.cl-tourney {
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  background:
+    linear-gradient(180deg, rgba(8, 16, 52, .9) 0%, rgba(8, 16, 52, .35) 45%, rgba(8, 16, 52, .55) 100%),
+    #0a1440 var(--bg) center / cover no-repeat;
+}
+
+.cl-tourney p {
+  margin: 4px 0 0;
+  text-shadow: 0 1px 4px #000;
+}
+
+.cl-tourney .cl-btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+/* =====================================================
+   KHUNG THÀNH VIÊN – hiệu ứng mới
+   (viền ánh sáng chạy vòng quanh khung, dòng thành viên trượt vào,
+    rê chuột: vạch vàng bên trái + nền sáng dần + avatar tỏa sáng)
+===================================================== */
+
+@property --cl-ang {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.cl-members-panel {
+  isolation: isolate;
+}
+
+.cl-members-panel::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  z-index: -1;
+  padding: 2px;
+  border-radius: 17px;
+  background: conic-gradient(from var(--cl-ang), transparent 0deg, transparent 250deg, #6fb6ff 300deg, #ffe08a 330deg, #6fb6ff 345deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: cl-orbit 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes cl-orbit {
+  to {
+    --cl-ang: 360deg;
+  }
+}
+
+.cl-members-panel .cl-member {
+  position: relative;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(255, 216, 107, .14), transparent) no-repeat left / 0% 100%;
+  animation: cl-row-in .45s ease both;
+  transition: background-size .35s ease;
+}
+
+.cl-members-panel .cl-member:nth-child(2) { animation-delay: .08s; }
+.cl-members-panel .cl-member:nth-child(3) { animation-delay: .16s; }
+.cl-members-panel .cl-member:nth-child(4) { animation-delay: .24s; }
+.cl-members-panel .cl-member:nth-child(5) { animation-delay: .32s; }
+
+@keyframes cl-row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
+.cl-members-panel .cl-member::before {
+  content: "";
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  left: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fff2b8, #e0a52a);
+  box-shadow: 0 0 8px rgba(255, 216, 107, .8);
+  transform: scaleY(0);
+  transition: transform .25s ease;
+}
+
+.cl-members-panel .cl-member:hover {
+  background-size: 100% 100%;
+}
+
+.cl-members-panel .cl-member:hover::before {
+  transform: scaleY(1);
+}
+
+.cl-members-panel .cl-member .pa {
+  transition: filter .25s ease, transform .25s ease;
+}
+
+.cl-members-panel .cl-member:hover .pa {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 8px rgba(120, 190, 255, .9));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-members-panel::before,
+  .cl-members-panel .cl-member {
+    animation: none;
+  }
+}
+
+@media (max-width: 1400px) {
+  .cl-quick {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =====================================================
+   CHỈNH (2): nút nhanh nhỏ gọn, Giải đấu gọn, hộp Quản lý CLB,
+   hiệu ứng viền cho mọi khung
+===================================================== */
+
+/* 4 nút nhanh: nhỏ, luôn một hàng */
+.cl-quick {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cl-quick button {
+  min-height: 0;
+  gap: 3px;
+  padding: 8px 4px 7px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cl-quick img,
+.cl-quick svg {
+  width: 28px;
+  height: 26px;
+}
+
+@media (max-width: 1400px) {
+  .cl-quick {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .cl-quick button {
+    font-size: 11px;
+  }
+}
+
+/* Giải đấu CLB: gọn lại cho cột phải không bị dài */
+.cl-tourney {
+  min-height: 150px;
+}
+
+/* ---------- Hộp Quản lý CLB ---------- */
+
+.cl-pop.cl-manage {
+  width: min(640px, 100%);
+  max-height: calc(100dvh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+.cl-manage-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(231, 189, 95, .3);
+}
+
+.cl-manage-head img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.cl-manage-head h3 {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 22px;
+  font-style: italic;
+  color: #f6d98a;
+}
+
+.cl-x {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 20px;
+  color: #dfe3f7;
+  background: rgba(255, 255, 255, .04);
+}
+
+.cl-manage-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 6px;
+}
+
+.cl-manage-note {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+}
+
+.cl-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.cl-manage-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid rgba(110, 160, 255, .25);
+  border-radius: 10px;
+  background: rgba(8, 14, 46, .55);
+}
+
+.cl-manage-row .pa {
+  width: 44px;
+  font-size: 8px;
+}
+
+.cl-manage-row .cl-member-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cl-manage-row .cl-member-actions small {
+  font-size: 12px;
+  color: #ffb4b4;
+}
+
+/* ---------- Hiệu ứng viền cho các khung ---------- */
+
+@property --cl-shine {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: -30%;
+}
+
+/* Hoa văn vàng ở 4 góc khung */
+.cl-panel::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 12px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 0 0, #ffe08a 0 2.5px, transparent 3px) top left / 14px 14px no-repeat,
+    radial-gradient(circle at 100% 0, #ffe08a 0 2.5px, transparent 3px) top right / 14px 14px no-repeat,
+    radial-gradient(circle at 0 100%, #ffe08a 0 2.5px, transparent 3px) bottom left / 14px 14px no-repeat,
+    radial-gradient(circle at 100% 100%, #ffe08a 0 2.5px, transparent 3px) bottom right / 14px 14px no-repeat,
+    linear-gradient(90deg, #f3cf72, transparent) top left / 34px 1.5px no-repeat,
+    linear-gradient(180deg, #f3cf72, transparent) top left / 1.5px 34px no-repeat,
+    linear-gradient(270deg, #f3cf72, transparent) top right / 34px 1.5px no-repeat,
+    linear-gradient(180deg, #f3cf72, transparent) top right / 1.5px 34px no-repeat,
+    linear-gradient(90deg, #f3cf72, transparent) bottom left / 34px 1.5px no-repeat,
+    linear-gradient(0deg, #f3cf72, transparent) bottom left / 1.5px 34px no-repeat,
+    linear-gradient(270deg, #f3cf72, transparent) bottom right / 34px 1.5px no-repeat,
+    linear-gradient(0deg, #f3cf72, transparent) bottom right / 1.5px 34px no-repeat;
+}
+
+/* Dải sáng chạy dọc mép trên khung */
+.cl-panel-head {
+  position: relative;
+}
+
+.cl-panel-head::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -4px;
+  left: 0;
+  height: 1px;
+  background:
+    radial-gradient(closest-side, rgba(255, 230, 160, .95), transparent) no-repeat var(--cl-shine) 50% / 30% 3px,
+    linear-gradient(90deg, transparent, rgba(231, 189, 95, .45), transparent);
+  animation: cl-edge 5s ease-in-out infinite;
+}
+
+@keyframes cl-edge {
+  0% {
+    --cl-shine: -30%;
+  }
+
+  60%,
+  100% {
+    --cl-shine: 130%;
+  }
+}
+
+/* Rê chuột vào khung: viền sáng vàng + bóng xanh */
+.cl-panel {
+  transition: border-color .25s ease, box-shadow .25s ease;
+}
+
+.cl-panel:hover {
+  border-color: rgba(255, 224, 138, .95);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .35), 0 0 18px rgba(80, 150, 255, .35), inset 0 0 0 1px rgba(120, 200, 255, .2);
+}
+
+/* Nút nhanh: icon nhún lên khi rê chuột */
+.cl-quick button img,
+.cl-quick button svg {
+  transition: transform .2s ease;
+}
+
+.cl-quick button:hover img,
+.cl-quick button:hover svg {
+  transform: translateY(-3px) scale(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-panel-head::after {
+    animation: none;
+  }
+}
+
+/* =====================================================
+   CHỈNH (3): bỏ tab Cài đặt, nhiệm vụ 1 dòng, đổi tên + khu vực CLB
+===================================================== */
+
+.cl-tabs {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Tên CLB + nút bút nhỏ */
+.cl-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.cl-name-row h2 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-pen.small {
+  width: 24px;
+  height: 24px;
+  opacity: .85;
+}
+
+.cl-pen.small:hover {
+  opacity: 1;
+}
+
+.cl-pen.small img {
+  width: 100%;
+  height: 100%;
+}
+
+/* Dòng "Khu vực" */
+.cl-fact-region > svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  fill: none;
+  stroke: #ffd86b;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cl-fact-region b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Ô chọn khu vực */
+.cl-region {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid rgba(110, 160, 255, .5);
+  border-radius: 10px;
+  background: rgba(6, 12, 40, .7);
+}
+
+.cl-region .cv-flag {
+  font-size: 18px;
+}
+
+.cl-region select {
+  flex: 1;
+  height: 38px;
+  border: 0;
+  outline: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  color: #eef0fb;
+  background: transparent;
+}
+
+.cl-region select option {
+  color: #eef0fb;
+  background: #0b1645;
+}
+
+/* Nhiệm vụ: chữ nhỏ lại, luôn một dòng */
+.cl-task {
+  grid-template-columns: 40px minmax(0, 1fr) auto 28px;
+  gap: 10px;
+  padding: 6px 10px;
+}
+
+.cl-task-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.cl-task-icon img {
+  width: 24px;
+  height: 24px;
+}
+
+.cl-task strong {
+  margin-bottom: 5px;
+  overflow: hidden;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-task-count {
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.cl-task-check {
+  width: 24px;
+  height: 24px;
+}
+
+.cl-reset {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* =====================================================
+   CHỈNH (4)
+===================================================== */
+
+/* Khung Nhiệm vụ CLB: tiêu đề không xuống dòng, đồng hồ nằm dòng riêng trong khung */
+.cl-tasks-panel .cl-panel-head {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.cl-tasks-panel .cl-panel-head h3 {
+  font-size: clamp(16px, 1.3vw, 19px);
+  white-space: nowrap;
+}
+
+.cl-tasks-panel .cl-panel-extra {
+  flex-basis: 100%;
+  margin-left: 0;
+}
+
+.cl-tasks-panel .cl-reset {
+  font-size: 12px;
+  color: #c9d2f2;
+}
+
+.cl-tasks-panel .cl-reset img {
+  width: 16px;
+}
+
+/* Tên nhiệm vụ dài: tự chạy qua lại, kéo / lăn ngang để đọc */
+.cl-task strong {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.cl-marquee {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  cursor: grab;
+  scrollbar-width: none;
+  user-select: none;
+  -webkit-mask: linear-gradient(90deg, #000 calc(100% - 12px), transparent);
+  mask: linear-gradient(90deg, #000 calc(100% - 12px), transparent);
+}
+
+.cl-marquee::-webkit-scrollbar {
+  display: none;
+}
+
+.cl-marquee:active {
+  cursor: grabbing;
+}
+
+/* Nút đổi tên: chỉ cây bút, không khung */
+.cl-pen.small {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.cl-pen.small svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #ffd86b;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6));
+}
+
+.cl-pen.small:hover svg {
+  stroke: #fff2b8;
+}
+
+/* Danh sách tìm CLB: lá cờ khu vực cạnh tên */
+.cl-list-row strong .cv-flag {
+  font-size: .9em;
+  margin-right: 2px;
+}

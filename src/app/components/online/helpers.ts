@@ -16,11 +16,13 @@ export function getCapturedPiece(
     const game = new Chess(beforeFen);
 
     let captured = game.get(to as Square);
+    const mover = game.get(from as Square);
 
-    // Bắt tốt qua đường: ô đích đang trống,
-    // quân tốt bị bắt nằm cùng hàng với quân xuất phát.
-    if (!captured && from[0] !== to[0]) {
-      captured = game.get(`${to[0]}${from[1]}` as Square);
+    // Bắt tốt qua đường: chỉ khi quân đi là Tốt, đi chéo vào ô trống
+    // và đúng ô bắt qua đường của thế cờ (không nhầm với Mã/Tượng đi chéo).
+    if (!captured && mover?.type === "p" && from[0] !== to[0] && game.fen().split(" ")[3] === to) {
+      const victim = game.get(`${to[0]}${from[1]}` as Square);
+      if (victim?.type === "p" && victim.color !== mover.color) captured = victim;
     }
 
     if (!captured || captured.type === "k") {
