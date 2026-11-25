@@ -311,7 +311,8 @@ function ReviewContent() {
       else if (label === "Mistake") cls = "mistake";
       else if (label === "Blunder") cls = "blunder";
 
-      return { move, a, beforeCp, afterCp, whiteAfter, accuracy, cls };
+      // Ghi rõ kiểu Cls để bước sau nâng cấp được thành brilliant / great
+      return { move, a, beforeCp, afterCp, whiteAfter, accuracy, cls: cls as Cls };
     });
 
     // Nâng cấp: Brilliant (thí quân đúng) và Tuyệt vời (trừng phạt sai lầm của đối thủ)
